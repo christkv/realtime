@@ -30,11 +30,11 @@ util.inherits(OSXIOStatAgent, EventEmitter);
 
 OSXIOStatAgent.prototype.start = function start() {
   var self = this;
-  if(this.iostat) this.stop();
+  if(this.agent) this.stop();
   // Set up the command
-  this.iostat = spawn('iostat', ['-w', '1']);
+  this.agent = spawn('iostat', ['-w', '1']);
   // Add listeners
-  this.iostat.stdout.on("data", function(data) {
+  this.agent.stdout.on("data", function(data) {
     // Split up the data
     var lines = data.toString().split(/\n/);
     // Check if we have the first line
@@ -72,22 +72,22 @@ OSXIOStatAgent.prototype.start = function start() {
     }
   });
 
-  this.iostat.stderr.on("data", function(data) {
+  this.agent.stderr.on("data", function(data) {
     self.emit("error", data);
   })
 
-  this.iostat.on("exit", function(code) {
-    self.emit("end", {code:code});
+  this.agent.on("exit", function(code) {
+    self.emit("end", code);
   });
 }
 
 OSXIOStatAgent.prototype.stop = function stop() {
-  if(this.iostat) {
-    this.iostat.kill('SIGKILL');
+  if(this.agent) {
+    this.agent.kill('SIGKILL');
   }
 
   // Emit end signal
-  this.emit("end");
+  this.emit("end", 0);
 }
 
 exports.build = _buildAgent;
