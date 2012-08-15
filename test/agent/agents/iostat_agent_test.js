@@ -1,4 +1,4 @@
-var iostat_agent = require('../../agent/agents/iostat_agent');
+var iostat_agent = require('../../../agent/agents/iostat_agent');
 
 exports.setUp = function(callback) {
   return callback();
@@ -29,8 +29,8 @@ exports['Should correctly retrieve a result for iostat on the host machine'] = f
     }
   });
 
-  iostat.on("end", function(data) {
-    test.equal(null, data);
+  iostat.on("end", function(code) {
+    test.equal(0, code);
   });
 
   iostat.on("error", function(err) {
