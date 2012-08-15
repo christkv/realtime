@@ -6,12 +6,14 @@ var EventEmitter = require('events').EventEmitter,
 var TopAgent = function NetstatAgent() {
 }
 
-var _buildAgent = function _buildAgent() {
+var _buildAgent = function _buildAgent(platform) {
   var arch = process.arch;
-  var platform = process.platform;
+  var platform = platform ? platform : process.platform;
 
   if("darwin" == platform) {
     return new OSXTopAgent();
+  } else if("linux" == platform) {
+    return new LinuxTopAgent();
   }
 
   // Throw an unsuported error
@@ -28,7 +30,7 @@ var OSXTopAgent = function OSXTopAgent() {
 
 util.inherits(OSXTopAgent, EventEmitter);
 
-var _parseTopEntry = function _parseTopEntry(self, data) {
+var _parseTopEntry = OSXTopAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
   // Split up the lines
   var lines = data.trim().split(/\n/);
   var parsingData = false;
@@ -288,6 +290,59 @@ OSXTopAgent.prototype.start = function start() {
 }
 
 OSXTopAgent.prototype.stop = function stop() {
+  if(this.agent) {
+    this.agent.kill('SIGKILL');
+  }
+
+  // Emit end signal
+  this.emit("end", 0);
+}
+
+/*******************************************************************************
+ *  Linux IO Stat agent
+ *******************************************************************************/
+var LinuxTopAgent = function OSXTopAgent() {
+  // Inherit the event emitter
+  EventEmitter.call(this);
+}
+
+util.inherits(LinuxTopAgent, EventEmitter);
+
+var _parseTopEntry = LinuxTopAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
+  console.log("===================================================================================")
+  console.log(data)
+}
+
+LinuxTopAgent.prototype.start = function start() {
+  var self = this;
+  if(this.agent) this.stop();
+
+  // // Set up the command
+  // this.agent = spawn('top', ['-S', '-r', '-l', '3']);
+  // // Add listeners
+  // this.agent.stdout.on("data", function(data) {
+  //   // Save all the data
+  //   dataEntry = dataEntry + data;
+  // });
+
+  // this.agent.stderr.on("data", function(data) {
+  //   self.emit("error", data);
+  // })
+
+  // this.agent.on("exit", function(code) {
+  //   var dataEntries = dataEntry.split('Processes:');
+  //   // Get the last data
+  //   var finalData = 'Processes:' + dataEntries.pop();
+  //   // If we have a valid execution
+  //   if(code == 0) {
+  //     self.emit("data", _parseTopEntry(self, finalData));
+  //   }
+  //   // Emit the end signal
+  //   self.emit("end", code);
+  // });
+}
+
+LinuxTopAgent.prototype.stop = function stop() {
   if(this.agent) {
     this.agent.kill('SIGKILL');
   }
