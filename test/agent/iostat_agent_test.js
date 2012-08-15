@@ -11,27 +11,31 @@ exports.tearDown = function(callback) {
 /**
  * @ignore
  */
-exports.shouldCorrectlyHandleIllegalDbNames = function(test) {
+exports['Should correctly retrieve a result for iostat on the host machine'] = function(test) {
   // Create an agent
-  var iostatAgent = iostat_agent.build();
+  var iostat = iostat_agent.build();
+  var index = 0;
   // Add listener to the agent
-  iostatAgent.on("data", function(data) {
+  iostat.on("data", function(data) {
     test.ok(data.cpu);
     test.ok(data.load_average);
     test.ok(data.disks);
-    // Stop agent
-    iostatAgent.stop();
-    // Signal test done
-    test.done();
+    index = index + 1;
+    if(index == 2) {
+      // Stop agent
+      iostat.stop();
+      // Signal test done
+      test.done();
+    }
   });
 
-  iostatAgent.on("end", function(data) {
+  iostat.on("end", function(data) {
     test.equal(null, data);
   });
 
-  iostatAgent.on("error", function(err) {
+  iostat.on("error", function(err) {
   });
 
   // Start agent
-  iostatAgent.start();
+  iostat.start();
 }

@@ -60,6 +60,7 @@ OSXIOStatAgent.prototype.start = function start() {
           }
           // Lets return the rest of the objec
           self.emit("data", {
+            'ts': new Date().toString(),
             'cpu':
               {'us': parseFloat(entries[index++], 10), 'sy': parseFloat(entries[index++], 10), 'id': parseFloat(entries[index++], 10)},
             'load_average':
