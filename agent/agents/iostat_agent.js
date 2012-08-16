@@ -107,87 +107,166 @@ var LinuxIOStatAgent = function LinuxIOStatAgent() {
   // Inherit the event emitter
   EventEmitter.call(this);
   // Current chunk of data
-  this.data = [];
+  this.data = '';
 }
 
 util.inherits(LinuxIOStatAgent, EventEmitter);
 
 LinuxIOStatAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
+  // console.log("==================================================================== -------------------------")
+  // console.log(self.data.join("\n"))
+  // console.log(data.toString('ascii'))
   // Split up the data
-  var lines = data.toString().split(/\n/);
+
+  // Add the data
+  this.data += data;
   // The disks available
   var objects = [];
-  // Check if we have the first line
-  for(var i = 0; i < lines.length; i++) {
-    if(lines[i].indexOf("Device:") != -1) {
-      // Parse the previous lines
-      if(self.data.length > 0) {
-        var object = {os:'linux', 'ts': new Date().toString(), disks:{}};
-        var disks = object.disks;
-        // Remove any empty lines
-        self.data = self.data.filter(function(value) { return value.trim() != '' });
-        // Process the lines
-        for(var j = 0; j < self.data.length; j++) {
-          var entries = this.data[j].trim().split(/ +/);
-          disks[entries[0].trim()] = {
-              // rrqm/s
-              //        The number of read requests merged per second that were queued to the device.
-            read_req_sec: parseFloat(entries[1], 10),
-              // wrqm/s
-              //        The number of write requests merged per second that were queued to the device.
-            write_req_sec: parseFloat(entries[2], 10),
-              // r/s
-              //        The number of read requests that were issued to the device per second.
-            issued_read_req_sec: parseFloat(entries[3], 10),
 
-              // w/s
-              //        The number of write requests that were issued to the device per second.
-            issued_write_req_sec: parseFloat(entries[4], 10),
+  // Check if we have a complete Device
+  if(this.data.match(/Device:/g) != null && this.data.match(/Device:/g).length > 1) {
+    // Split by Device:
+    var firstIndex = this.data.indexOf("Device:");
+    var secondIndex = this.data.indexOf("Device:", firstIndex + 1);
+    // Get the text
+    var text = this.data.substring(firstIndex, secondIndex);
+    // Set remaining
+    this.data = this.data.substr(secondIndex);
+    // Split the lines
+    var lines = text.split(/\n/);
+    var object = {disks: {}};
+    var disks = object.disks;
 
-              // rkB/s
-              //        The number of kilobytes read from the device per second.
-            kb_read_sec: parseFloat(entries[5], 10),
+    for(var j = 0; j < lines.length; j++) {
+      if(lines[j].indexOf("Device:") == -1 && lines[j].trim() != '') {
+        var entries = lines[j].trim().split(/ +/);
+        disks[entries[0].trim()] = {
+            // rrqm/s
+            //        The number of read requests merged per second that were queued to the device.
+          read_req_sec: parseFloat(entries[1], 10),
+            // wrqm/s
+            //        The number of write requests merged per second that were queued to the device.
+          write_req_sec: parseFloat(entries[2], 10),
+            // r/s
+            //        The number of read requests that were issued to the device per second.
+          issued_read_req_sec: parseFloat(entries[3], 10),
 
-              // wkB/s
-              //        The number of kilobytes written to the device per second.
-            kb_write_sec: parseFloat(entries[6], 10),
+            // w/s
+            //        The number of write requests that were issued to the device per second.
+          issued_write_req_sec: parseFloat(entries[4], 10),
 
-              // avgrq-sz
-              //        The average size (in sectors) of the requests that were issued to the device.
-            avg_sec_size: parseFloat(entries[7], 10),
+            // rkB/s
+            //        The number of kilobytes read from the device per second.
+          kb_read_sec: parseFloat(entries[5], 10),
 
-              // avgqu-sz
-              //        The average queue length of the requests that were issued to the device.
-            avg_queue_length: parseFloat(entries[8], 10),
+            // wkB/s
+            //        The number of kilobytes written to the device per second.
+          kb_write_sec: parseFloat(entries[6], 10),
 
-              // await
-              //        The average time (in milliseconds) for I/O requests issued to the device to be served. This
-              //        includes the time spent by the requests in queue and the time spent servicing them.
+            // avgrq-sz
+            //        The average size (in sectors) of the requests that were issued to the device.
+          avg_sec_size: parseFloat(entries[7], 10),
 
-            avg_io_wait_time: parseFloat(entries[9], 10),
+            // avgqu-sz
+            //        The average queue length of the requests that were issued to the device.
+          avg_queue_length: parseFloat(entries[8], 10),
 
-              // svctm
-              //        The average service time (in milliseconds) for I/O requests that were issued to the device.
+            // await
+            //        The average time (in milliseconds) for I/O requests issued to the device to be served. This
+            //        includes the time spent by the requests in queue and the time spent servicing them.
 
-            avg_service_time: parseFloat(entries[10], 10),
+          avg_io_wait_time: parseFloat(entries[9], 10),
 
-              // %util
-              //        Percentage  of CPU time during which I/O requests were issued to the device (bandwidth uti‐
-              //        lization for the device). Device saturation occurs when this value is close to 100%.
-            cpu_saturation: parseFloat(entries[11], 10),
-          }
+            // svctm
+            //        The average service time (in milliseconds) for I/O requests that were issued to the device.
+
+          avg_service_time: parseFloat(entries[10], 10),
+
+            // %util
+            //        Percentage  of CPU time during which I/O requests were issued to the device (bandwidth uti‐
+            //        lization for the device). Device saturation occurs when this value is close to 100%.
+          cpu_saturation: parseFloat(entries[11], 10),
         }
-        // Add the object
-        objects.push(object);
-        // Reset the data
-        self.data = [];
-      } else {
-        self.data = [];
       }
-    } else {
-      this.data.push(lines[i]);
     }
+    // Add the object
+    objects.push(object);
   }
+
+  // var lines = data.toString().split(/\n/);
+  // // The disks available
+  // var objects = [];
+  // // Check if we have the first line
+  // for(var i = 0; i < lines.length; i++) {
+  //   if(lines[i].indexOf("Device:") != -1) {
+  //     // Parse the previous lines
+  //     if(self.data.length > 0) {
+  //       var object = {os:'linux', 'ts': new Date().toString(), disks:{}};
+  //       var disks = object.disks;
+  //       // Remove any empty lines
+  //       this.data += lines[i] + "\n";
+  //       // Process the lines
+  //       for(var j = 0; j < self.data.length; j++) {
+  //         var entries = this.data[j].trim().split(/ +/);
+  //         disks[entries[0].trim()] = {
+  //             // rrqm/s
+  //             //        The number of read requests merged per second that were queued to the device.
+  //           read_req_sec: parseFloat(entries[1], 10),
+  //             // wrqm/s
+  //             //        The number of write requests merged per second that were queued to the device.
+  //           write_req_sec: parseFloat(entries[2], 10),
+  //             // r/s
+  //             //        The number of read requests that were issued to the device per second.
+  //           issued_read_req_sec: parseFloat(entries[3], 10),
+
+  //             // w/s
+  //             //        The number of write requests that were issued to the device per second.
+  //           issued_write_req_sec: parseFloat(entries[4], 10),
+
+  //             // rkB/s
+  //             //        The number of kilobytes read from the device per second.
+  //           kb_read_sec: parseFloat(entries[5], 10),
+
+  //             // wkB/s
+  //             //        The number of kilobytes written to the device per second.
+  //           kb_write_sec: parseFloat(entries[6], 10),
+
+  //             // avgrq-sz
+  //             //        The average size (in sectors) of the requests that were issued to the device.
+  //           avg_sec_size: parseFloat(entries[7], 10),
+
+  //             // avgqu-sz
+  //             //        The average queue length of the requests that were issued to the device.
+  //           avg_queue_length: parseFloat(entries[8], 10),
+
+  //             // await
+  //             //        The average time (in milliseconds) for I/O requests issued to the device to be served. This
+  //             //        includes the time spent by the requests in queue and the time spent servicing them.
+
+  //           avg_io_wait_time: parseFloat(entries[9], 10),
+
+  //             // svctm
+  //             //        The average service time (in milliseconds) for I/O requests that were issued to the device.
+
+  //           avg_service_time: parseFloat(entries[10], 10),
+
+  //             // %util
+  //             //        Percentage  of CPU time during which I/O requests were issued to the device (bandwidth uti‐
+  //             //        lization for the device). Device saturation occurs when this value is close to 100%.
+  //           cpu_saturation: parseFloat(entries[11], 10),
+  //         }
+  //       }
+  //       // Add the object
+  //       objects.push(object);
+  //       // Reset the data
+  //       self.data = [];
+  //     } else {
+  //       self.data = [];
+  //     }
+  //   } else if(lines[i].split(/ +/).length == 14) {
+  //     this.data.push(lines[i]);
+  //   }
+  // }
 
   return objects;
 }

@@ -18,16 +18,11 @@ exports['Should correctly retrieve a result for iostat on the host machine'] = f
   var index = 0;
   // Add listener to the agent
   iostat.on("data", function(data) {
-    test.ok(data.cpu);
-    test.ok(data.load_average);
-    test.ok(data.disks);
-    index = index + 1;
-    if(index == 2) {
-      // Stop agent
-      iostat.stop();
-      // Signal test done
-      test.done();
-    }
+    test.ok(data);
+    // Stop agent
+    iostat.stop();
+    // Signal test done
+    test.done();
   });
 
   iostat.on("end", function(code) {
