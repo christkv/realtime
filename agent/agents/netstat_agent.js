@@ -89,7 +89,6 @@ OSXNetstatAgent.prototype.stop = function stop() {
   this.emit("end", 0);
 }
 
-//netstat -i -w 1 -e -c
 /*******************************************************************************
  *  Linux IO Stat agent
  *******************************************************************************/
@@ -99,119 +98,118 @@ var LinuxNetstatAgent = function LinuxNetstatAgent() {
   // Used to validate keys
   this.keys = {};
   // Current chunk of data
-  this.data = [];
+  this.data = '';
 }
 
 util.inherits(LinuxNetstatAgent, EventEmitter);
 
 LinuxNetstatAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
-  // Split up the data
-  var lines = data.toString().split(/\n/);
   // The disks available
   var objects = [];
-  // var object = {};
-  // Check if we have the first line
-  for(var i = 0; i < lines.length; i++) {
-    if(lines[i].indexOf("Link encap:") != -1) {
-      // If the interface is in the key set we are done with one netstat
-      var cleanvalues = lines[i].split('Link encap:');//[1].trim().split(/, */);
-      if(self.keys[cleanvalues[0].trim()]) {
-        // Set object
-        var object = {};
-        var name = null;
-        // Parse all the entries
-        for(var j = 0; j < self.data.length; j++) {
-          if(self.data[j].indexOf("Link encap:") != -1) {
-            var cleanvalues = self.data[j].split('Link encap:');//[1].trim().split(/, */);
-            name = cleanvalues[0].trim();
-            // Set empty object
-            object[name] = {
-              'ts': new Date().toString(),
-              'input': {},
-              'output': {},
-              'link_encap': cleanvalues[1].split(/ +/)[0].trim(),
-              'hw_addr': cleanvalues[1].split(/ +/)[2] != null ? cleanvalues[1].split(/ +/)[2].trim() : cleanvalues[1].split(/ +/)[1].trim(),
-            };
-          } else if(self.data[j].indexOf("inet addr:") != -1) {
-            var cleanvalues = self.data[j].split(/  /);
-            if(name != null) {
-              for(var k = 0; k < cleanvalues.length; k++) {
-                if(cleanvalues[k].indexOf('inet addr') != -1) {
-                  object[name].inet_addr = cleanvalues[k].split(/:/)[1].trim();
-                } else if(cleanvalues[k].indexOf('Bcast') != -1) {
-                  object[name].bcast = cleanvalues[k].split(/:/)[1].trim();
-                } else if(cleanvalues[k].indexOf('Mask') != -1) {
-                  object[name].mask = cleanvalues[k].split(/:/)[1].trim();
-                }
-              }
-            }
-          } else if(self.data[j].indexOf("RX packets:") != -1) {
-            var cleanvalues = self.data[j].split("RX packets:")[1].split(/ +/)
-            if(name != null) {
-              object[name].input.packets = parseInt(cleanvalues[0].trim(), 10);
-              object[name].input.errs = parseInt(cleanvalues[1].split(/:/)[1].trim(), 10);
-              object[name].input.dropped = parseInt(cleanvalues[2].split(/:/)[1].trim(), 10);
-              object[name].input.overruns = parseInt(cleanvalues[3].split(/:/)[1].trim(), 10);
-              object[name].input.frame = parseInt(cleanvalues[4].split(/:/)[1].trim(), 10);
-            }
-          } else if(self.data[j].indexOf("TX packets:") != -1) {
-            var cleanvalues = self.data[j].split("TX packets:")[1].split(/ +/)
-            if(name != null) {
-              object[name].output.packets = parseInt(cleanvalues[0].trim(), 10);
-              object[name].output.errs = parseInt(cleanvalues[1].split(/:/)[1].trim(), 10);
-              object[name].output.dropped = parseInt(cleanvalues[2].split(/:/)[1].trim(), 10);
-              object[name].output.overruns = parseInt(cleanvalues[3].split(/:/)[1].trim(), 10);
-              object[name].output.frame = parseInt(cleanvalues[4].split(/:/)[1].trim(), 10);
-            }
-          } else if(self.data[j].indexOf("RX bytes:") != -1) {
-            var cleanvalues = self.data[j].split("RX bytes:")[1].split(/ +/)
-            if(name != null) {
-              object[name].input.bytes = parseInt(cleanvalues[0].trim(), 10);
-              object[name].output.bytes = parseInt(cleanvalues[4].split(/:/)[1].trim(), 10);
-            }
-          } else if(self.data[j].indexOf("collisions:") != -1) {
-            var cleanvalues = self.data[j].split("collisions:")[1].split(/ +/)
-            if(name != null) {
-              object[name].colls = parseInt(cleanvalues[0].trim(), 10);
-              object[name].txqueuelen = parseInt(cleanvalues[1].trim().split(/:/)[1], 10);
-            }
-          } else if(self.data[j].indexOf("inet6 addr:") != -1) {
-            var cleanvalues = self.data[j].split(/inet6 addr:/)[1].split(/Scope:/)
-            if(name != null) {
-              object[name].inet_6_addr = cleanvalues[0].trim();
-              object[name].scope = cleanvalues[1].trim();
-            }
-          } else if(self.data[j].indexOf("MTU") != -1) {
-            var cleanvalues = self.data[j].split(/MTU:/)
-            if(name != null) {
-              var temp = cleanvalues[0].trim().split(/ +/);
-              object[name].supports = {};
-              for(var _i = 0; _i < temp.length; _i++) {
-                object[name].supports[temp[_i]] = true;
-              }
+  // Add the data to our existing object
+  this.data += data;
+  // Validate that we have a full set of keys
+  var keys = {};
+  var devices = this.data.match(/[a-z|A-Z|0-9]+ +Link encap:/g);
+  // Find the first duplicate and cut it off from there
+  for(var i = 0; i < devices.length; i++) {
+    var key = devices[i].split(/ +/)[0];
 
-              // Add the mtu
-              object[name].mtu = parseInt(cleanvalues[1].split(/ +/)[0].trim(), 10);
-              object[name].metric = parseInt(cleanvalues[1].split(/ +/)[1].split(/:/)[1].trim(), 10);
+    if(keys[key] == true) {
+      // Locate the index
+      var index = this.data.indexOf(devices[i], this.data.indexOf(devices[i]) + 1);
+      var data = this.data.substr(0, index);
+      this.data = this.data.substr(index);
+      // Break up into lines
+      var lines = data.split(/\n/);
+      // Set object
+      keys = {};
+      var object = {};
+      var name = null;
+      // Parse all the entries
+      for(var j = 0; j < lines.length; j++) {
+        if(lines[j].indexOf("Link encap:") != -1) {
+          var cleanvalues = lines[j].split('Link encap:');//[1].trim().split(/, */);
+          name = cleanvalues[0].trim();
+          // Set empty object
+          object[name] = {
+            'ts': new Date().toString(),
+            'input': {},
+            'output': {},
+            'link_encap': cleanvalues[1].split(/ +/)[0].trim(),
+            'hw_addr': cleanvalues[1].split(/ +/)[2] != null ? cleanvalues[1].split(/ +/)[2].trim() : cleanvalues[1].split(/ +/)[1].trim(),
+          };
+        } else if(lines[j].indexOf("inet addr:") != -1) {
+          var cleanvalues = lines[j].split(/  /);
+          if(name != null) {
+            for(var k = 0; k < cleanvalues.length; k++) {
+              if(cleanvalues[k].indexOf('inet addr') != -1) {
+                object[name].inet_addr = cleanvalues[k].split(/:/)[1].trim();
+              } else if(cleanvalues[k].indexOf('Bcast') != -1) {
+                object[name].bcast = cleanvalues[k].split(/:/)[1].trim();
+              } else if(cleanvalues[k].indexOf('Mask') != -1) {
+                object[name].mask = cleanvalues[k].split(/:/)[1].trim();
+              }
             }
           }
-        }
+        } else if(lines[j].indexOf("RX packets:") != -1) {
+          var cleanvalues = lines[j].split("RX packets:")[1].split(/ +/)
+          if(name != null) {
+            object[name].input.packets = parseInt(cleanvalues[0].trim(), 10);
+            object[name].input.errs = parseInt(cleanvalues[1].split(/:/)[1].trim(), 10);
+            object[name].input.dropped = parseInt(cleanvalues[2].split(/:/)[1].trim(), 10);
+            object[name].input.overruns = parseInt(cleanvalues[3].split(/:/)[1].trim(), 10);
+            object[name].input.frame = parseInt(cleanvalues[4].split(/:/)[1].trim(), 10);
+          }
+        } else if(lines[j].indexOf("TX packets:") != -1) {
+          var cleanvalues = lines[j].split("TX packets:")[1].split(/ +/)
+          if(name != null) {
+            object[name].output.packets = parseInt(cleanvalues[0].trim(), 10);
+            object[name].output.errs = parseInt(cleanvalues[1].split(/:/)[1].trim(), 10);
+            object[name].output.dropped = parseInt(cleanvalues[2].split(/:/)[1].trim(), 10);
+            object[name].output.overruns = parseInt(cleanvalues[3].split(/:/)[1].trim(), 10);
+            object[name].output.frame = parseInt(cleanvalues[4].split(/:/)[1].trim(), 10);
+          }
+        } else if(lines[j].indexOf("RX bytes:") != -1) {
+          var cleanvalues = lines[j].split("RX bytes:")[1].split(/ +/)
+          if(name != null) {
+            object[name].input.bytes = parseInt(cleanvalues[0].trim(), 10);
+            object[name].output.bytes = parseInt(cleanvalues[4].split(/:/)[1].trim(), 10);
+          }
+        } else if(lines[j].indexOf("collisions:") != -1) {
+          var cleanvalues = lines[j].split("collisions:")[1].split(/ +/)
+          if(name != null) {
+            object[name].colls = parseInt(cleanvalues[0].trim(), 10);
+            object[name].txqueuelen = parseInt(cleanvalues[1].trim().split(/:/)[1], 10);
+          }
+        } else if(lines[j].indexOf("inet6 addr:") != -1) {
+          var cleanvalues = lines[j].split(/inet6 addr:/)[1].split(/Scope:/)
+          if(name != null) {
+            object[name].inet_6_addr = cleanvalues[0].trim();
+            object[name].scope = cleanvalues[1].trim();
+          }
+        } else if(lines[j].indexOf("MTU") != -1) {
+          var cleanvalues = lines[j].split(/MTU:/)
+          if(name != null) {
+            var temp = cleanvalues[0].trim().split(/ +/);
+            object[name].supports = {};
+            for(var _i = 0; _i < temp.length; _i++) {
+              object[name].supports[temp[_i]] = true;
+            }
 
-        // Clear up parsing
-        self.data = [];
-        self.keys = {};
-        // Add object to list
-        objects.push(object);
-      } else {
-        // We found a unknown adapter
-        self.keys[cleanvalues[0].trim()] = true;
-        // Add to list of data entries
-        self.data.push(lines[i]);
+            // Add the mtu
+            object[name].mtu = parseInt(cleanvalues[1].split(/ +/)[0].trim(), 10);
+            object[name].metric = parseInt(cleanvalues[1].split(/ +/)[1].split(/:/)[1].trim(), 10);
+          }
+        }
       }
+      // Add object to list
+      if(Object.keys(object).length > 0) objects.push(object);
     } else {
-      self.data.push(lines[i]);
+      keys[key] = true;
     }
   }
+
   // Return all objects
   return objects;
 }
@@ -220,7 +218,7 @@ LinuxNetstatAgent.prototype.start = function start() {
   var self = this;
   if(this.agent) this.stop();
   // Set up the command
-  this.agent = spawn('netstat', ['-w', '1']);
+  this.agent = spawn('netstat', ['-i', '-e', '-c']);
   // Add listeners
   this.agent.stdout.on("data", function(data) {
     var objects = self._parseTopEntry(self, data);

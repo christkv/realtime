@@ -16,13 +16,12 @@ exports['Should correctly collect netstat data for two ticks'] = function(test) 
   // Create an agent
   var netstat = netstat_agent.build();
   var index = 0;
+  var done = false;
   // Add listener to the agent
   netstat.on("data", function(data) {
-    test.ok(data.input);
-    test.ok(data.output);
-    test.ok(data.colls != null);
-    index = index + 1;
-    if(index == 2) {
+    if(!done) {
+      done = true;
+      test.ok(data);
       // Stop agent
       netstat.stop();
       // Signal test done
