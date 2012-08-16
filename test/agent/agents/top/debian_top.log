@@ -1,0 +1,79 @@
+top - 11:31:34 up 807 days, 23:49,  1 user,  load average: 0.04, 0.07, 0.08
+Tasks:  72 total,   1 running,  71 sleeping,   0 stopped,   0 zombie
+Cpu(s):  2.4%us,  0.2%sy,  0.0%ni, 97.4%id,  0.1%wa,  0.0%hi,  0.0%si,  0.0%st
+Mem:   2030676k total,  1297780k used,   732896k free,   341932k buffers
+Swap:  4198968k total,      740k used,  4198228k free,   176892k cached
+
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+    1 root      20   0  8352  716  600 S    0  0.0  10:06.66 init
+    2 root      15  -5     0    0    0 S    0  0.0   0:00.02 kthreadd
+    3 root      RT  -5     0    0    0 S    0  0.0   1:41.29 migration/0
+    4 root      15  -5     0    0    0 S    0  0.0   0:20.72 ksoftirqd/0
+    5 root      RT  -5     0    0    0 S    0  0.0   0:09.76 watchdog/0
+    6 root      RT  -5     0    0    0 S    0  0.0   0:04.84 migration/1
+    7 root      15  -5     0    0    0 S    0  0.0   0:48.63 ksoftirqd/1
+    8 root      RT  -5     0    0    0 S    0  0.0   0:03.22 watchdog/1
+    9 root      15  -5     0    0    0 S    0  0.0  11:56.21 events/0
+   10 root      15  -5     0    0    0 S    0  0.0  16:52.28 events/1
+   11 root      15  -5     0    0    0 S    0  0.0   0:00.00 khelper
+   46 root      15  -5     0    0    0 S    0  0.0   0:01.94 kblockd/0
+   47 root      15  -5     0    0    0 S    0  0.0   0:11.68 kblockd/1
+   49 root      15  -5     0    0    0 S    0  0.0   0:00.00 kacpid
+   50 root      15  -5     0    0    0 S    0  0.0   0:00.00 kacpi_notify
+  127 root      15  -5     0    0    0 S    0  0.0   0:00.00 ksuspend_usbd
+  133 root      15  -5     0    0    0 S    0  0.0   0:00.00 khubd
+  136 root      15  -5     0    0    0 S    0  0.0   0:00.00 kseriod
+  184 root      15  -5     0    0    0 S    0  0.0  14:10.49 kswapd0
+  185 root      15  -5     0    0    0 S    0  0.0   0:00.00 aio/0
+  186 root      15  -5     0    0    0 S    0  0.0   0:00.00 aio/1
+  398 root      15  -5     0    0    0 S    0  0.0   0:00.00 ata/0
+  399 root      15  -5     0    0    0 S    0  0.0   0:00.00 ata/1
+  400 root      15  -5     0    0    0 S    0  0.0   0:00.00 ata_aux
+  422 root      15  -5     0    0    0 S    0  0.0   0:00.00 scsi_eh_0
+  424 root      15  -5     0    0    0 S    0  0.0   0:00.00 scsi_eh_1
+  426 root      15  -5     0    0    0 S    0  0.0   0:00.00 scsi_eh_2
+  428 root      15  -5     0    0    0 S    0  0.0   0:00.00 scsi_eh_3
+ 1034 root      20   0     0    0    0 S    0  0.0   0:16.94 pdflush
+ 1052 root      15  -5     0    0    0 S    0  0.0  12:46.76 md0_raid1
+ 1059 root      15  -5     0    0    0 S    0  0.0   3:18.33 md1_raid1
+ 1067 root      15  -5     0    0    0 S    0  0.0 935:37.15 md2_raid1
+ 1084 root      15  -5     0    0    0 S    0  0.0   0:00.00 kstriped
+ 1090 root      15  -5     0    0    0 S    0  0.0   0:00.00 ksnapd
+ 1125 root      15  -5     0    0    0 S    0  0.0  74:33.73 kjournald
+ 1206 root      16  -4 16932 1148  488 S    0  0.1   0:00.14 udevd
+ 1945 root      15  -5     0    0    0 S    0  0.0   0:00.52 kjournald
+ 2234 root      15  -5     0    0    0 S    0  0.0  41:33.23 kondemand/0
+ 2235 root      15  -5     0    0    0 S    0  0.0   0:00.00 kondemand/1
+ 2356 root      20   0  3796  572  480 S    0  0.0   0:00.00 getty
+ 2357 root      20   0  3796  576  480 S    0  0.0   0:00.00 getty
+ 2358 root      20   0  3796  576  480 S    0  0.0   0:00.00 getty
+ 2359 root      20   0  3796  572  480 S    0  0.0   0:00.00 getty
+ 2360 root      20   0  3796  576  480 S    0  0.0   0:00.00 getty
+ 2361 root      20   0  3796  576  480 S    0  0.0   0:00.00 getty
+ 4352 portable  20   0  254m 103m 5648 S    0  5.2   1:17.34 ruby1.8
+ 4361 portable  20   0  253m 102m 5644 S    0  5.2   0:18.02 ruby1.8
+ 4364 root      20   0 66048 3136 2492 S    0  0.2   0:00.04 sshd
+ 4367 christkv  20   0 66048 1648  996 S    0  0.1   0:00.00 sshd
+ 4368 christkv  20   0 19688 2228 1412 S    0  0.1   0:00.20 bash
+ 4391 christkv  20   0 19072 1184  900 R    0  0.1   0:00.00 top
+ 6258 root      20   0 48864 1176  672 S    0  0.1  64:18.48 sshd
+ 6927 christkv  20   0 24944 1364  780 S    0  0.1   0:02.04 screen
+ 6928 christkv  20   0 19380 2268 1424 S    0  0.1   0:00.10 bash
+ 6944 christkv  20   0 36180 2684 1996 S    0  0.1   5:54.61 lftp
+ 7392 root      20   0  116m 1568 1036 S    0  0.1   5:52.58 rsyslogd
+ 7591 root      20   0  3812  636  512 S    0  0.0   0:00.00 acpid
+10567 root      20   0  8988 1296 1056 S    0  0.1   0:00.00 mysqld_safe
+10604 mysql     20   0  290m  53m 6040 S    0  2.7   2423:13 mysqld
+10605 root      20   0  3852  628  532 S    0  0.0   0:00.00 logger
+10681 root      20   0 22160  968  732 S    0  0.0   5:52.29 cron
+11761 root      20   0  4188  592  456 S    0  0.0   0:05.92 mdadm
+23856 root      20   0 52324 2516  916 S    0  0.1   4:41.79 sendmail-mta
+25509 root      20   0 80064  15m 1684 S    0  0.8   4:43.72 python
+30805 root      20   0  151m 3384 1676 S    0  0.2 219:11.35 HelperServer
+30814 root      20   0 48796  13m 1504 S    0  0.7   4239:13 ruby1.8
+30817 root      20   0 35460  904  272 S    0  0.0   0:00.00 nginx
+30818 nobody    20   0 36436 2680  976 S    0  0.1  90:32.25 nginx
+30822 nobody    20   0 36460 2612  976 S    0  0.1  92:03.17 nginx
+30824 nobody    20   0 36336 2580  976 S    0  0.1  87:59.89 nginx
+30826 nobody    20   0 36352 2604  984 S    0  0.1  88:46.47 nginx
+31998 root      20   0     0    0    0 S    0  0.0   0:19.10 pdflush
