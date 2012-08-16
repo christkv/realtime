@@ -1,4 +1,5 @@
-var iostat_agent = require('../../../agent/agents/iostat_agent');
+var iostat_agent = require('../../../agent/agents/iostat_agent'),
+  fs = require('fs');
 
 exports.setUp = function(callback) {
   return callback();
@@ -38,4 +39,28 @@ exports['Should correctly retrieve a result for iostat on the host machine'] = f
 
   // Start agent
   iostat.start();
+}
+
+/**
+ * @ignore
+ */
+exports['Should parse osx iostat'] = function(test) {
+  var data = fs.readFileSync("./test/agent/agents/iostat/osx_iostat.log", 'ascii');
+  // Create an agent
+  var agent = iostat_agent.build('darwin');
+  var result = agent._parseTopEntry(agent, data);
+  test.equal(2, Object.keys(result.disks).length);
+  test.done();
+}
+
+/**
+ * @ignore
+ */
+exports['Should parse linux iostat'] = function(test) {
+  var data = fs.readFileSync("./test/agent/agents/iostat/debian_iostat.log", 'ascii');
+  // Create an agent
+  var agent = iostat_agent.build('linux');
+  var result = agent._parseTopEntry(agent, data)[0];
+  test.equal(5, Object.keys(result.disks).length);
+  test.done();
 }

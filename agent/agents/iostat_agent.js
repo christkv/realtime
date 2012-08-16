@@ -6,12 +6,14 @@ var EventEmitter = require('events').EventEmitter,
 var IOStatAgent = function IOStatAgent() {
 }
 
-var _buildAgent = function _buildAgent() {
+var _buildAgent = function _buildAgent(platform) {
   var arch = process.arch;
-  var platform = process.platform;
+  var platform = platform ? platform : process.platform;
 
   if("darwin" == platform) {
     return new OSXIOStatAgent();
+  } else if("linux" == platform) {
+    return new LinuxIOStatAgent();
   }
 
   // Throw an unsuported error
@@ -28,6 +30,47 @@ var OSXIOStatAgent = function OSXIOStatAgent() {
 
 util.inherits(OSXIOStatAgent, EventEmitter);
 
+OSXIOStatAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
+  // Split up the data
+  var lines = data.toString().split(/\n/);
+  // The disks available
+  var disks = {};
+  var object = {};
+  // Check if we have the first line
+  for(var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    // We got the list of disks
+    if(line.indexOf('cpu') != -1) {
+      self.disks = line.trim().split(/ +/);
+      self.disks = self.disks.slice(0, self.disks.length - 3)
+    } else if(line.indexOf('tps') == -1) {
+      var entries = line.trim().split(/ +/);
+      // Ensure we have enough data
+      if(entries.length >= (self.disks.length * 3)) {
+        var index = 0;
+        for(var j = 0; j < self.disks.length; j++) {
+          disks[self.disks[j]] = {
+            'kb_t': parseFloat(entries[index++], 10),
+            'tps': parseFloat(entries[index++], 10),
+            'mb_s': parseFloat(entries[index++], 10)
+          };
+        }
+        // Create object
+        object = {
+          'ts': new Date().toString(),
+          'cpu':
+            {'us': parseFloat(entries[index++], 10), 'sy': parseFloat(entries[index++], 10), 'id': parseFloat(entries[index++], 10)},
+          'load_average':
+            {'1m': parseFloat(entries[index++], 10), '5m': parseFloat(entries[index++], 10), '15m': parseFloat(entries[index++], 10)},
+          'disks':disks
+        }
+      }
+    }
+  }
+  // Return the object
+  return object;
+}
+
 OSXIOStatAgent.prototype.start = function start() {
   var self = this;
   if(this.agent) this.stop();
@@ -35,41 +78,8 @@ OSXIOStatAgent.prototype.start = function start() {
   this.agent = spawn('iostat', ['-w', '1']);
   // Add listeners
   this.agent.stdout.on("data", function(data) {
-    // Split up the data
-    var lines = data.toString().split(/\n/);
-    // Check if we have the first line
-    for(var i = 0; i < lines.length; i++) {
-      var line = lines[i];
-      // We got the list of disks
-      if(line.indexOf('cpu') != -1) {
-        self.disks = line.trim().split(/ +/);
-        self.disks = self.disks.slice(0, self.disks.length - 3)
-      } else if(line.indexOf('tps') == -1) {
-        var entries = line.trim().split(/ +/);
-        // Ensure we have enough data
-        if(entries.length >= (self.disks.length * 3)) {
-          // The disks available
-          var disks = {};
-          var index = 0;
-          for(var j = 0; j < self.disks.length; j++) {
-            disks[self.disks[j]] = {
-              'kb_t': parseFloat(entries[index++], 10),
-              'tps': parseFloat(entries[index++], 10),
-              'mb_s': parseFloat(entries[index++], 10)
-            };
-          }
-          // Lets return the rest of the objec
-          self.emit("data", {
-            'ts': new Date().toString(),
-            'cpu':
-              {'us': parseFloat(entries[index++], 10), 'sy': parseFloat(entries[index++], 10), 'id': parseFloat(entries[index++], 10)},
-            'load_average':
-              {'1m': parseFloat(entries[index++], 10), '5m': parseFloat(entries[index++], 10), '15m': parseFloat(entries[index++], 10)},
-            'disks':disks
-          });
-        }
-      }
-    }
+    var object = self._parseTopEntry(self, data);
+    if(object != null) self.emit("data", object);
   });
 
   this.agent.stderr.on("data", function(data) {
@@ -90,6 +100,127 @@ OSXIOStatAgent.prototype.stop = function stop() {
   this.emit("end", 0);
 }
 
-// iostat -x -d 1
+/*******************************************************************************
+ *  Linux IO Stat agent
+ *******************************************************************************/
+var LinuxIOStatAgent = function LinuxIOStatAgent() {
+  // Inherit the event emitter
+  EventEmitter.call(this);
+  // Current chunk of data
+  this.data = [];
+}
+
+util.inherits(LinuxIOStatAgent, EventEmitter);
+
+LinuxIOStatAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
+  // Split up the data
+  var lines = data.toString().split(/\n/);
+  // The disks available
+  var objects = [];
+  // Check if we have the first line
+  for(var i = 0; i < lines.length; i++) {
+    if(lines[i].indexOf("Device:") != -1) {
+      // Parse the previous lines
+      if(self.data.length > 0) {
+        var object = {disks:{}};
+        var disks = object.disks;
+        // Remove any empty lines
+        self.data = self.data.filter(function(value) { return value.trim() != '' });
+        // Process the lines
+        for(var j = 0; j < self.data.length; j++) {
+          var entries = this.data[j].trim().split(/ +/);
+          disks[entries[0].trim()] = {
+              // rrqm/s
+              //        The number of read requests merged per second that were queued to the device.
+            read_req_sec: parseFloat(entries[1], 10),
+              // wrqm/s
+              //        The number of write requests merged per second that were queued to the device.
+            write_req_sec: parseFloat(entries[2], 10),
+              // r/s
+              //        The number of read requests that were issued to the device per second.
+            issued_read_req_sec: parseFloat(entries[3], 10),
+
+              // w/s
+              //        The number of write requests that were issued to the device per second.
+            issued_write_req_sec: parseFloat(entries[4], 10),
+
+              // rkB/s
+              //        The number of kilobytes read from the device per second.
+            kb_read_sec: parseFloat(entries[5], 10),
+
+              // wkB/s
+              //        The number of kilobytes written to the device per second.
+            kb_write_sec: parseFloat(entries[6], 10),
+
+              // avgrq-sz
+              //        The average size (in sectors) of the requests that were issued to the device.
+            avg_sec_size: parseFloat(entries[7], 10),
+
+              // avgqu-sz
+              //        The average queue length of the requests that were issued to the device.
+            avg_queue_length: parseFloat(entries[8], 10),
+
+              // await
+              //        The average time (in milliseconds) for I/O requests issued to the device to be served. This
+              //        includes the time spent by the requests in queue and the time spent servicing them.
+
+            avg_io_wait_time: parseFloat(entries[9], 10),
+
+              // svctm
+              //        The average service time (in milliseconds) for I/O requests that were issued to the device.
+
+            avg_service_time: parseFloat(entries[10], 10),
+
+              // %util
+              //        Percentage  of CPU time during which I/O requests were issued to the device (bandwidth uti‐
+              //        lization for the device). Device saturation occurs when this value is close to 100%.
+            cpu_saturation: parseFloat(entries[11], 10),
+          }
+        }
+        // Add the object
+        objects.push(object);
+        // Reset the data
+        self.data = [];
+      } else {
+        self.data = [];
+      }
+    } else {
+      this.data.push(lines[i]);
+    }
+  }
+
+  return objects;
+}
+
+LinuxIOStatAgent.prototype.start = function start() {
+  var self = this;
+  if(this.agent) this.stop();
+  // Set up the command
+  this.agent = spawn('iostat', ['-x', '-d', '1']);
+  // Add listeners
+  this.agent.stdout.on("data", function(data) {
+    var objects = self._parseTopEntry(self, data);
+    for(var i = 0; i < objects.length; i++) {
+      self.emit("data", objects[i]);
+    }
+  });
+
+  this.agent.stderr.on("data", function(data) {
+    self.emit("error", data);
+  })
+
+  this.agent.on("exit", function(code) {
+    self.emit("end", code);
+  });
+}
+
+LinuxIOStatAgent.prototype.stop = function stop() {
+  if(this.agent) {
+    this.agent.kill('SIGKILL');
+  }
+
+  // Emit end signal
+  this.emit("end", 0);
+}
 
 exports.build = _buildAgent;
