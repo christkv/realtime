@@ -35,7 +35,7 @@ OSXIOStatAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
   var lines = data.toString().split(/\n/);
   // The disks available
   var disks = {};
-  var object = {};
+  var object = {os:'osx', 'ts': new Date().toString()};
   // Check if we have the first line
   for(var i = 0; i < lines.length; i++) {
     var line = lines[i];
@@ -122,7 +122,7 @@ LinuxIOStatAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) 
     if(lines[i].indexOf("Device:") != -1) {
       // Parse the previous lines
       if(self.data.length > 0) {
-        var object = {disks:{}};
+        var object = {os:'linux', 'ts': new Date().toString(), disks:{}};
         var disks = object.disks;
         // Remove any empty lines
         self.data = self.data.filter(function(value) { return value.trim() != '' });

@@ -34,7 +34,7 @@ OSXTopAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
   // Split up the lines
   var lines = data.trim().split(/\n/);
   var parsingData = false;
-  var object = {os:'osx', processes: []};
+  var object = {os:'osx', 'ts': new Date().toString(), processes: []};
 
   // Parse the lines
   for(var i = 0; i < lines.length; i++) {
@@ -318,7 +318,7 @@ LinuxTopAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
   // Split up the lines
   var lines = data.trim().split(/\n/);
   var parsingData = false;
-  var object = {os:'linux', processes: []};
+  var object = {os:'linux', 'ts': new Date().toString(), processes: []};
 
   // Parse the lines
   for(var i = 0; i < lines.length; i++) {
@@ -428,29 +428,25 @@ LinuxTopAgent.prototype.start = function start() {
   var self = this;
   if(this.agent) this.stop();
 
-  // // Set up the command
-  // this.agent = spawn('top', ['-S', '-r', '-l', '3']);
-  // // Add listeners
-  // this.agent.stdout.on("data", function(data) {
-  //   // Save all the data
-  //   dataEntry = dataEntry + data;
-  // });
+  var self = this;
+  if(this.agent) this.stop();
+  // Set up the command
+  this.agent = spawn('top', ['-bn1']);
+  // Add listeners
+  this.agent.stdout.on("data", function(data) {
+    var objects = self._parseTopEntry(self, data);
+    for(var i = 0; i < objects.length; i++) {
+      self.emit("data", objects[i]);
+    }
+  });
 
-  // this.agent.stderr.on("data", function(data) {
-  //   self.emit("error", data);
-  // })
+  this.agent.stderr.on("data", function(data) {
+    self.emit("error", data);
+  })
 
-  // this.agent.on("exit", function(code) {
-  //   var dataEntries = dataEntry.split('Processes:');
-  //   // Get the last data
-  //   var finalData = 'Processes:' + dataEntries.pop();
-  //   // If we have a valid execution
-  //   if(code == 0) {
-  //     self.emit("data", _parseTopEntry(self, finalData));
-  //   }
-  //   // Emit the end signal
-  //   self.emit("end", code);
-  // });
+  this.agent.on("exit", function(code) {
+    self.emit("end", code);
+  });
 }
 
 LinuxTopAgent.prototype.stop = function stop() {
