@@ -316,7 +316,7 @@ util.inherits(LinuxTopAgent, EventEmitter);
 
 LinuxTopAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
   // Split up the lines
-  var lines = data.trim().split(/\n/);
+  var lines = data.toString().trim().split(/\n/);
   var parsingData = false;
   var object = {os:'linux', 'ts': new Date().toString(), processes: []};
 
@@ -426,6 +426,7 @@ LinuxTopAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
 
 LinuxTopAgent.prototype.start = function start() {
   var self = this;
+  var allData = '';
   if(this.agent) this.stop();
 
   var self = this;
@@ -434,10 +435,7 @@ LinuxTopAgent.prototype.start = function start() {
   this.agent = spawn('top', ['-bn1']);
   // Add listeners
   this.agent.stdout.on("data", function(data) {
-    var objects = self._parseTopEntry(self, data);
-    for(var i = 0; i < objects.length; i++) {
-      self.emit("data", objects[i]);
-    }
+    allData += data;
   });
 
   this.agent.stderr.on("data", function(data) {
@@ -445,6 +443,8 @@ LinuxTopAgent.prototype.start = function start() {
   })
 
   this.agent.on("exit", function(code) {
+    var object = self._parseTopEntry(self, allData);
+    if(object) self.emit("data", object);
     self.emit("end", code);
   });
 }
