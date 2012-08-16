@@ -30,11 +30,11 @@ var OSXTopAgent = function OSXTopAgent() {
 
 util.inherits(OSXTopAgent, EventEmitter);
 
-var _parseTopEntry = OSXTopAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
+OSXTopAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
   // Split up the lines
   var lines = data.trim().split(/\n/);
   var parsingData = false;
-  var object = {processes: []};
+  var object = {os:'osx', processes: []};
 
   // Parse the lines
   for(var i = 0; i < lines.length; i++) {
@@ -115,6 +115,12 @@ var _parseTopEntry = OSXTopAgent.prototype._parseTopEntry = function _parseTopEn
           value: parseFloat(cleanvalues[4].split(/ +/)[0].split(/[A-Z|a-z]/)[0], 10),
           unit: cleanvalues[4].split(/ +/)[0].split(/[0-9|.]+/)[1]
         }
+      }
+
+      // Create total memory object
+      object.phys_mem.total = {
+        value: (object.phys_mem.used.value + object.phys_mem.free.value),
+        unit: object.phys_mem.used.unit
       }
     } else if(line.indexOf('VM:') != -1) {
       var cleanvalues = line.split('VM:')[1].trim().split(/, */);
@@ -265,7 +271,7 @@ OSXTopAgent.prototype.start = function start() {
   // Current data entry
   var dataEntry = '';
   // Set up the command
-  this.agent = spawn('top', ['-S', '-r', '-l', '3']);
+  this.agent = spawn('top', ['-S', '-r', '-l', '1']);
   // Add listeners
   this.agent.stdout.on("data", function(data) {
     // Save all the data
@@ -282,7 +288,7 @@ OSXTopAgent.prototype.start = function start() {
     var finalData = 'Processes:' + dataEntries.pop();
     // If we have a valid execution
     if(code == 0) {
-      self.emit("data", _parseTopEntry(self, finalData));
+      self.emit("data", self._parseTopEntry(self, finalData));
     }
     // Emit the end signal
     self.emit("end", code);
@@ -308,9 +314,114 @@ var LinuxTopAgent = function OSXTopAgent() {
 
 util.inherits(LinuxTopAgent, EventEmitter);
 
-var _parseTopEntry = LinuxTopAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
-  console.log("===================================================================================")
-  console.log(data)
+LinuxTopAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
+  // Split up the lines
+  var lines = data.trim().split(/\n/);
+  var parsingData = false;
+  var object = {os:'linux', processes: []};
+
+  // Parse the lines
+  for(var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+
+    if(line.indexOf('load average:') != -1) {
+      var cleanvalues = line.split('load average:')[1].trim().split(/, */);
+      object.load_avg = cleanvalues.map(function(value) { return parseFloat(value.trim(), 10)});
+    } else if(line.indexOf('Tasks:') != -1) {
+      var cleanvalues = line.split('Tasks:')[1].trim().split(/, */);
+      object.processes_stats = {
+        total: parseInt(cleanvalues[0].split(/ +/)[0], 10),
+        running: parseInt(cleanvalues[1].split(/ +/)[0], 10),
+        sleeping: parseInt(cleanvalues[3].split(/ +/)[0], 10),
+        stuck: parseInt(cleanvalues[2].split(/ +/)[0], 10)
+      }
+    } else if(line.indexOf('Cpu(s):') != -1) {
+      var cleanvalues = line.split('Cpu(s):')[1].trim().split(/, */);
+      object.cpu_usage = {
+        user: parseFloat(cleanvalues[0].replace(/%[a-z|A-Z]+/, ''), 10),
+        sys: parseFloat(cleanvalues[1].replace(/%[a-z|A-Z]+/, ''), 10),
+        nice: parseFloat(cleanvalues[2].replace(/%[a-z|A-Z]+/, ''), 10),
+        idle: parseFloat(cleanvalues[3].replace(/%[a-z|A-Z]+/, ''), 10),
+        io_wait: parseFloat(cleanvalues[4].replace(/%[a-z|A-Z]+/, ''), 10),
+        hardware_irq: parseFloat(cleanvalues[5].replace(/%[a-z|A-Z]+/, ''), 10),
+        software_irq: parseFloat(cleanvalues[6].replace(/%[a-z|A-Z]+/, ''), 10),
+        steal_time: parseFloat(cleanvalues[7].replace(/%[a-z|A-Z]+/, ''), 10),
+      }
+    } else if(line.indexOf('Mem:') != -1) {
+      var cleanvalues = line.split('Mem:')[1].trim().split(/, */);
+      object.phys_mem = {
+        total: {
+          value: parseFloat(cleanvalues[0].split(/ +/)[0].split(/[A-Z|a-z]/)[0], 10),
+          unit: cleanvalues[0].split(/ +/)[0].split(/[0-9|.]+/)[1]
+        },
+        used: {
+          value: parseFloat(cleanvalues[1].split(/ +/)[0].split(/[A-Z|a-z]/)[0], 10),
+          unit: cleanvalues[1].split(/ +/)[0].split(/[0-9|.]+/)[1]
+        },
+        free: {
+          value: parseFloat(cleanvalues[2].split(/ +/)[0].split(/[A-Z|a-z]/)[0], 10),
+          unit: cleanvalues[2].split(/ +/)[0].split(/[0-9|.]+/)[1]
+        },
+        buffers: {
+          value: parseFloat(cleanvalues[3].split(/ +/)[0].split(/[A-Z|a-z]/)[0], 10),
+          unit: cleanvalues[3].split(/ +/)[0].split(/[0-9|.]+/)[1]
+        }
+      }
+    } else if(line.indexOf('Swap:') != -1) {
+      var cleanvalues = line.split('Swap:')[1].trim().split(/, */);
+      object.swap = {
+        total: {
+          value: parseFloat(cleanvalues[0].split(/ +/)[0].split(/[A-Z|a-z]/)[0], 10),
+          unit: cleanvalues[0].split(/ +/)[0].split(/[0-9|.]+/)[1]
+        },
+        used: {
+          value: parseFloat(cleanvalues[1].split(/ +/)[0].split(/[A-Z|a-z]/)[0], 10),
+          unit: cleanvalues[1].split(/ +/)[0].split(/[0-9|.]+/)[1]
+        },
+        free: {
+          value: parseFloat(cleanvalues[2].split(/ +/)[0].split(/[A-Z|a-z]/)[0], 10),
+          unit: cleanvalues[2].split(/ +/)[0].split(/[0-9|.]+/)[1]
+        },
+        cached: {
+          value: parseFloat(cleanvalues[3].split(/ +/)[0].split(/[A-Z|a-z]/)[0], 10),
+          unit: cleanvalues[3].split(/ +/)[0].split(/[0-9|.]+/)[1]
+        }
+      }
+    } else if(line.indexOf('PID') != -1) {
+      parsingData = true;
+    } else if(parsingData) {
+      var cleanvalues = line.trim().split(/ +/)
+      // Add all the commands
+      object.processes.push({
+        pid: parseInt(cleanvalues[0].match(/[0-9]+/), 10),
+        user: cleanvalues[1].trim(),
+        priority: isNaN(parseInt(cleanvalues[2].match(/[0-9]+/), 10)) ? cleanvalues[2] : parseInt(cleanvalues[2].match(/[0-9]+/), 10),
+        nice: isNaN(parseInt(cleanvalues[3].match(/[0-9]+/), 10)) ? cleanvalues[3] : parseInt(cleanvalues[3].match(/[0-9]+/), 10),
+        virtual_memory: {
+          value: parseInt(cleanvalues[4].trim().replace(/\+|\-/, '').split(/[A-Z][a-z]/)[0], 10),
+          unit: cleanvalues[4].match(/[0-9]+[a-z|A-Z]+/) ? cleanvalues[4].trim().replace(/\+|\-/, '').split(/[0-9]+/)[1] : 'k'
+        },
+        resident_memory_size: {
+          value: parseInt(cleanvalues[5].trim().replace(/\+|\-/, '').split(/[A-Z][a-z]/)[0], 10),
+          unit: cleanvalues[5].match(/[0-9]+[a-z|A-Z]+/) ? cleanvalues[5].trim().replace(/\+|\-/, '').split(/[0-9]+/)[1] : 'k'
+        },
+        resident_shared_addr_size: {
+          value: parseInt(cleanvalues[6].trim().replace(/\+|\-/, '').split(/[A-Z][a-z]/)[0], 10),
+          unit: cleanvalues[6].match(/[0-9]+[a-z|A-Z]+/) ? cleanvalues[6].trim().replace(/\+|\-/, '').split(/[0-9]+/)[1] : 'k'
+        },
+        state: cleanvalues[7].trim(),
+        cpu: parseFloat(cleanvalues[8].trim(), 10),
+        resident_private_addr_size: {
+          value: parseFloat(cleanvalues[9].trim().replace(/\+|\-/, '').split(/[A-Z][a-z]/)[0], 10),
+          unit: cleanvalues[9].match(/[0-9]+[a-z|A-Z]+/) ? cleanvalues[9].trim().replace(/\+|\-/, '').split(/[0-9]+/)[1] : 'k'
+        },
+        time: cleanvalues[10].trim(),
+        command: cleanvalues.slice(11).join(" "),
+      });
+    }
+  }
+
+  return object;
 }
 
 LinuxTopAgent.prototype.start = function start() {

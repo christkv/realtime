@@ -40,10 +40,11 @@ exports['Should correctly retrieve top results for localhost'] = function(test) 
  * @ignore
  */
 exports['Should parse osx top'] = function(test) {
-  var topText = fs.readFileSync("./test/agent/agents/top/osx_top.log");
+  var topText = fs.readFileSync("./test/agent/agents/top/osx_top.log", 'ascii');
   // Create an agent
   var top = top_agent.build('darwin');
-  var result = top._parseTopEntry(top, topText.toString());
+  var result = top._parseTopEntry(top, topText);
+  test.equal(107, result.processes.length)
   test.done();
 }
 
@@ -51,9 +52,10 @@ exports['Should parse osx top'] = function(test) {
  * @ignore
  */
 exports['Should parse linux top'] = function(test) {
-  var topText = fs.readFileSync("./test/agent/agents/top/debian_top.log");
+  var topText = fs.readFileSync("./test/agent/agents/top/debian_top.log", 'ascii');
   // Create an agent
   var top = top_agent.build('linux');
-  var result = top._parseTopEntry(top, topText.toString());
+  var result = top._parseTopEntry(top, topText);
+  test.equal(72, result.processes.length)
   test.done();
 }

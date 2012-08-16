@@ -81,4 +81,6 @@ OSXNetstatAgent.prototype.stop = function stop() {
   this.emit("end", 0);
 }
 
+//netstat -i -w 1 -e -c
+
 exports.build = _buildAgent;

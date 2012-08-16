@@ -90,4 +90,6 @@ OSXIOStatAgent.prototype.stop = function stop() {
   this.emit("end", 0);
 }
 
+// iostat -x -d 1
+
 exports.build = _buildAgent;
