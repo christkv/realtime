@@ -1,6 +1,7 @@
 var EventEmitter = require('events').EventEmitter,
   util = require("util"),
   spawn = require('child_process').spawn,
+  exec = require('child_process').exec,
   BaseAgent = require("./base_agent").BaseAgent;
 
 var _buildAgent = function _buildAgent(platform, config) {
@@ -28,6 +29,7 @@ var _buildAgent = function _buildAgent(platform, config) {
  *******************************************************************************/
 var OSXTopAgent = function OSXTopAgent(config) {
   this.config = config;
+  this._singleRun = true;
   BaseAgent.call(this);
 }
 
@@ -270,48 +272,30 @@ OSXTopAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
 
 OSXTopAgent.prototype.start = function start() {
   var self = this;
-  if(this.agent) this.stop();
-  // Current data entry
-  var dataEntry = '';
-  // Set up the command
-  this.agent = spawn('top', ['-S', '-r', '-l', '1']);
-  // Add listeners
-  this.agent.stdout.on("data", function(data) {
-    // Save all the data
-    dataEntry = dataEntry + data;
-  });
-
-  this.agent.stderr.on("data", function(data) {
-    self.emit("error", data);
-  })
-
-  this.agent.on("exit", function(code) {
-    var dataEntries = dataEntry.split('Processes:');
-    // Get the last data
-    var finalData = 'Processes:' + dataEntries.pop();
-    // If we have a valid execution
-    if(code == 0) {
-      self.emit("data", self._parseTopEntry(self, finalData));
-    }
-    // Emit the end signal
-    self.emit("end", code);
+  // Set up and execute the command
+  this.agent = exec('top -S -r -l 1',
+    function (error, stdout, stderr) {
+      if(error !== null) {
+        console.log('exec error: ' + error);
+        self.emit("error", error);
+      } else if(stderr != null && stderr.length > 0) {
+        self.emit("error", stderr);
+      } else {
+        var object = self._parseTopEntry(self, stdout);
+        if(object) self.emit("data", object);
+        self.emit("end", 0);
+      }
   });
 }
 
-OSXTopAgent.prototype.stop = function stop() {
-  if(this.agent) {
-    this.agent.kill('SIGKILL');
-  }
-
-  // Emit end signal
-  this.emit("end", 0);
-}
+OSXTopAgent.prototype.stop = function stop() {}
 
 /*******************************************************************************
  *  Linux IO Stat agent
  *******************************************************************************/
 var LinuxTopAgent = function OSXTopAgent(config) {
   this.config = config;
+  this._singleRun = true;
   // Inherit the event emitter
   EventEmitter.call(this);
 }
@@ -457,9 +441,6 @@ LinuxTopAgent.prototype.stop = function stop() {
   if(this.agent) {
     this.agent.kill('SIGKILL');
   }
-
-  // Emit end signal
-  this.emit("end", 0);
 }
 
 exports.build = _buildAgent;

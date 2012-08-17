@@ -7,4 +7,8 @@ var BaseAgent = function BaseAgent() {
 
 util.inherits(BaseAgent, EventEmitter);
 
+BaseAgent.prototype.singleRun = function singleRun() {
+  return typeof this._singleRun == 'boolean' ? this._singleRun : false;
+}
+
 exports.BaseAgent = BaseAgent;

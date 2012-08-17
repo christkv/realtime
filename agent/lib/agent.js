@@ -41,12 +41,15 @@ var _setUpAgents = function _setUpAgents(self) {
         break;
       case 'iostat':
         if(logger) logger.info("Configuring iostat agent");
+        _configureIoStatAgent(self, agentConfig);
         break;
       case 'netstat':
         if(logger) logger.info("Configuring netstat agent");
+        _configureNetStatAgent(self, agentConfig);
         break;
       case 'mongodb':
         if(logger) logger.info("Configuring mongodb agent");
+        _configureMongoDBAgent(self, agentConfig);
         break
       default:
         if(logger) logger.error("no agent available for " + agentConfig.agent);
@@ -71,6 +74,14 @@ var endHandler = function endHandler(name, agent, self) {
 
   return function(code) {
     if(logger) logger.info(format("[%s]:agent recived end with code %s", name, code));
+    // if we have a single run function start it again
+    if(agent.singleRun()) {
+      // Execute in next tick
+      process.nextTick(function() {
+        // Reboot the agent and do another collection
+        agent.start();
+      })
+    }
   }
 }
 
@@ -79,9 +90,8 @@ var errorHandler = function errorHandler(name, agent, self) {
   var logger = self.logger;
 
   return function(err) {
-    if(logger) logger.error(format("[%s]:agent received error:%s", err.message));
+    if(logger) logger.error(format("[%s]:agent received error:%s", name, err.toString()));
     if(logger) logger.debug(JSON.stringify(err));
-
   }
 }
 
@@ -97,12 +107,24 @@ var _configureTopAgent = function _configureTopAgent(self, config) {
   agent.start();
 }
 
+// Setup iostat agent
+var _configureIoStatAgent = function _configureIoStatAgent(self, config) {
+}
+
+// Setup netstat agent
+var _configureNetStatAgent = function _configureNetStatAgent(self, config) {
+}
+
+// Setup mongodb agent
+var _configureMongoDBAgent = function _configureMongoDBAgent(self, config) {
+}
+
 /*******************************************************************************
  *  Logger class used in the agent
  *******************************************************************************/
 var Logger = function Logger(logger) {
   this.logger = logger;
-  this.logLevel = Logger.DEBUG;
+  this.logLevel = Logger.INFO;
 }
 
 Logger.DEBUG = 5;
