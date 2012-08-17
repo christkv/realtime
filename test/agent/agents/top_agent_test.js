@@ -1,4 +1,4 @@
-var top_agent = require('../../../agent/agents/top_agent'),
+var top_agent = require('../../../agent/lib/agents/top_agent'),
   fs = require('fs');
 
 exports.setUp = function(callback) {

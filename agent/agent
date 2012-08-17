@@ -1,23 +1,4 @@
-var nopt = require("nopt")
-  , fs = require('fs')
-  , Stream = require("stream").Stream
-  , path = require("path");
-
-var Agent = function(options) {
-  // Set up the options
-  this.options = options;
-  // Set up all the options
-  this.host = this.options.host || "localhost";
-  this.port = this.options.port || 9090;
-  this.cfg = this.options.cfg;
-
-  // Check if we have a cfg (JSON file)
-  try {
-    var configuration = fs.readFileSync(this.cfg, 'ascii');
-  } catch(err) {
-
-  }
-}
+var Agent = require("./agents/agent").Agent;
 
 // Known options
 var knownOpts = {   "help" : Boolean

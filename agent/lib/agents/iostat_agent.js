@@ -1,19 +1,22 @@
 var EventEmitter = require('events').EventEmitter,
   util = require("util"),
-  spawn = require('child_process').spawn;
+  spawn = require('child_process').spawn,
+  BaseAgent = require("./base_agent").BaseAgent;
 
-// The io stat agent, build different models depending on the os
-var IOStatAgent = function IOStatAgent() {
-}
-
-var _buildAgent = function _buildAgent(platform) {
+var _buildAgent = function _buildAgent(platform, config) {
   var arch = process.arch;
   var platform = platform ? platform : process.platform;
 
+  // Set up the platform
+  if(typeof platform == 'object') {
+    config = platform;
+    platform = process.platform;
+  }
+
   if("darwin" == platform) {
-    return new OSXIOStatAgent();
+    return new OSXIOStatAgent(config);
   } else if("linux" == platform) {
-    return new LinuxIOStatAgent();
+    return new LinuxIOStatAgent(config);
   }
 
   // Throw an unsuported error
@@ -24,11 +27,10 @@ var _buildAgent = function _buildAgent(platform) {
  *  OSX IO Stat agent
  *******************************************************************************/
 var OSXIOStatAgent = function OSXIOStatAgent() {
-  // Inherit the event emitter
-  EventEmitter.call(this);
+  BaseAgent.call(this);
 }
 
-util.inherits(OSXIOStatAgent, EventEmitter);
+util.inherits(OSXIOStatAgent, BaseAgent);
 
 OSXIOStatAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
   // Split up the data

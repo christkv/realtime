@@ -1,4 +1,4 @@
-var iostat_agent = require('../../../agent/agents/iostat_agent'),
+var iostat_agent = require('../../../agent/lib/agents/iostat_agent'),
   fs = require('fs');
 
 exports.setUp = function(callback) {

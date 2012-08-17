@@ -1,4 +1,4 @@
-var netstat_agent = require('../../../agent/agents/netstat_agent'),
+var netstat_agent = require('../../../agent/lib/agents/netstat_agent'),
   fs = require('fs');
 
 exports.setUp = function(callback) {
