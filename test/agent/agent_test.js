@@ -1,5 +1,7 @@
-var fs = require('fs'),
-  Agent = require('../../agent/lib/agent').Agent;
+var fs = require('fs')
+  , http = require('http')
+  , Agent = require('../../agent/lib/agent').Agent
+  , WSServer = require('../../lib/api/ws_server').WSServer;
 
 exports.setUp = function(callback) {
   try {
@@ -20,7 +22,7 @@ exports.tearDown = function(callback) {
 exports['Should setup agent with config'] = function(test) {
   var cfg = {
     // Host
-    host: 'localhost',
+    host: '192.168.43.126',
     // Port
     port: 9090,
     // Agents to use
@@ -43,11 +45,36 @@ exports['Should setup agent with config'] = function(test) {
     retries: 3
   }
 
-  // Create an Agent
-  var agent = new Agent(cfg);
+  // Set up server to use on the app
+  var server = http.createServer(function(request, response) {
+    console.log((new Date()) + ' Received request for ' + request.url);
+    response.writeHead(404);
+    response.end();
+  });
 
-  // try { fs.unlingSync("./tmp/agent_test.conf"); } catch(err) {};
-  // // Save to file
-  // fs.writeFileSync("./tmp/agent_test.conf", JSON.stringify(cfg, null, 2), 'ascii');
-  test.done();
+  server.listen(9090, "192.168.43.126", function() {
+    console.log((new Date()) + ' Server is listening on port 9090');
+  });
+
+  // Start the server
+  var agent = new Agent(cfg);
+  // Create a responding server
+  var wsServer = new WSServer(server);
+  // Listen to one event coming through
+  wsServer.on("data", function(data, connection) {
+    test.ok(data != null);
+    test.ok(connection != null);
+    // Shutdown all the connections
+    wsServer.stop();
+    server.close();
+    // Shutdown the agent
+    agent.shutdown();
+
+    // Test done
+    test.done();
+  });
+  // Start the server
+  wsServer.start();
+  // Start the agent
+  agent.start();
 }

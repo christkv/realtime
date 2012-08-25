@@ -288,7 +288,13 @@ OSXTopAgent.prototype.start = function start() {
   });
 }
 
-OSXTopAgent.prototype.stop = function stop() {}
+OSXTopAgent.prototype.stop = function stop() {
+  try {
+    if(this.agent) {
+      this.agent.kill('SIGKILL');
+    }
+  } catch(err) {}
+}
 
 /*******************************************************************************
  *  Linux IO Stat agent
@@ -438,9 +444,11 @@ LinuxTopAgent.prototype.start = function start() {
 }
 
 LinuxTopAgent.prototype.stop = function stop() {
-  if(this.agent) {
-    this.agent.kill('SIGKILL');
-  }
+  try {
+    if(this.agent) {
+      this.agent.kill('SIGKILL');
+    }
+  } catch(err) {}
 }
 
 exports.build = _buildAgent;

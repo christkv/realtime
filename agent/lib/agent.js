@@ -1,13 +1,18 @@
 var nopt = require("nopt")
   , fs = require('fs')
+  , net = require('net')
+  , EventEmitter = require('events').EventEmitter
+  , WebSocketClient = require('websocket').client
   , format = require('util').format
   , Stream = require("stream").Stream
+  , inherits = require('util').inherits
   , path = require("path");
 
 // Agents
 var top_agent = require('./agents/top_agent');
 
 var Agent = function Agent(config) {
+  EventEmitter.call(this);
   // Unpack the config
   this.host = config.host || "localhost";
   this.port = config.port || 9090;
@@ -17,14 +22,58 @@ var Agent = function Agent(config) {
                       ? config.agents
                       : [{agent:"top"}, {agent:"iostat"}, {agent:"netstat"}];
   // All agent instances
+  this.running = true;
   this.agents = [];
   // Create a log instance
   if(this.log) {
     this.logger = new Logger(fs.createWriteStream(this.log, {flags:"a+", encoding:'ascii', mode: 0666}));
   }
+}
 
+inherits(Agent, EventEmitter);
+
+Agent.prototype.start = function start() {
+  // Setup the server connection for reporting the numbers
+  _connectToServer(this);
   // Unpack the parameters and instantiate the components
   _setUpAgents(this);
+}
+
+Agent.prototype.shutdown = function shutdown() {
+  if(this.logger) this.logger.error("agent shutting down");
+  // Set state to not runnint
+  this.running = false;
+  // Terminate all agents
+  for(var i = 0; i < this.agents.length; i++) {
+    this.agents[i].stop();
+  }
+}
+
+var _errorHandler = function _errorHandler(event, self) {
+  return function(err) {
+    if(self.logger && err != true) self.logger.error(format("agent received error:%s", err.toString()));
+    if(err != null) self.shutdown();
+  }
+}
+
+var _dataHandler = function _dataHandler(self) {
+  return function(data) {
+    if(logger) logger.info(format("agent received data:%s", JSON.stringify(data)));
+  }
+}
+
+var _connectToServer = function _connectToServer(self) {
+  this.client = new WebSocketClient();
+  this.client.on('connectFailed', _errorHandler('connectFailed', self));
+  this.client.on('connect', function(connection) {
+    self.connection = connection;
+    self.connection.on('error', _errorHandler('error', self));
+    self.connection.on('close', _errorHandler('error', self));
+    self.connection.on('message', _dataHandler('message', self));
+  });
+
+  // Connect to the websocket
+  this.client.connect(format('ws://%s:%s/', self.host, self.port), 'agent');
 }
 
 var _setUpAgents = function _setUpAgents(self) {
@@ -65,6 +114,11 @@ var dataHandler = function dataHandler(name, agent, self) {
   return function(data) {
     if(logger) logger.info(format("[%s]:agent received data", name));
     if(logger) logger.debug(JSON.stringify(data));
+
+    // If we are connected, fire off the message
+    if(self.running) {
+      self.connection.sendUTF(JSON.stringify(data));
+    }
   }
 }
 
@@ -75,11 +129,15 @@ var endHandler = function endHandler(name, agent, self) {
   return function(code) {
     if(logger) logger.info(format("[%s]:agent recived end with code %s", name, code));
     // if we have a single run function start it again
-    if(agent.singleRun()) {
+    if(agent.singleRun() && self.running) {
       // Execute in next tick
       process.nextTick(function() {
-        // Reboot the agent and do another collection
-        agent.start();
+        try {
+          // Reboot the agent and do another collection
+          agent.start();
+        } catch(err) {
+          if(logger) logger.error(format("[%s]:agent received error:%s", name, err.toString()));
+        }
       })
     }
   }
@@ -90,8 +148,12 @@ var errorHandler = function errorHandler(name, agent, self) {
   var logger = self.logger;
 
   return function(err) {
-    if(logger) logger.error(format("[%s]:agent received error:%s", name, err.toString()));
-    if(logger) logger.debug(JSON.stringify(err));
+    if(self.running) {
+      if(logger) logger.error(format("[%s]:agent received error:%s", name, err.toString()));
+      if(logger) logger.debug(JSON.stringify(err));
+      // Terminate the agent
+      self.shutdown();
+    }
   }
 }
 
@@ -103,8 +165,15 @@ var _configureTopAgent = function _configureTopAgent(self, config) {
   agent.on("data", dataHandler("top", agent, self));
   agent.on("end", endHandler("top", agent, self));
   agent.on("error", errorHandler("top", agent, self));
-  // Boot it up
-  agent.start();
+
+  try {
+    // Boot it up
+    agent.start();
+    // Add the agent to the list of active agents
+    self.agents.push(agent);
+  } catch(err) {
+    if(logger) logger.error(format("[%s]:agent received error:%s", name, err.toString()));
+  }
 }
 
 // Setup iostat agent

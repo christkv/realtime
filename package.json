@@ -11,7 +11,10 @@
     "url": "git://github.com/christkv/realtime.git"
   },
   "dependencies": {
-    "nopt": "latest"
+    "nopt": "latest",
+    "websocket": "latest",
+    "express": "latest",
+    "mongodb": "latest"
   },
   "devDependencies": {
     "nodeunit": "latest"
@@ -19,7 +22,9 @@
   "keywords": [
     "realtime",
     "monitoring",
-    "server"
+    "server",
+    "express",
+    "websocket"
   ],
   "author": "Christian Kvalheim",
   "license": "Apache"
