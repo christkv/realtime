@@ -69,7 +69,6 @@ exports['Should setup agent with config'] = function(test) {
     server.close();
     // Shutdown the agent
     agent.shutdown();
-
     // Test done
     test.done();
   });

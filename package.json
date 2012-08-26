@@ -14,7 +14,9 @@
     "nopt": "latest",
     "websocket": "latest",
     "express": "latest",
-    "mongodb": "latest"
+    "mongodb": "latest",
+    "ejs": "latest",
+    "async": "latest"
   },
   "devDependencies": {
     "nodeunit": "latest"
