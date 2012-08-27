@@ -2,22 +2,24 @@ var EventEmitter = require('events').EventEmitter,
   util = require("util"),
   spawn = require('child_process').spawn,
   exec = require('child_process').exec,
+  format = require('util').format,
   BaseAgent = require("./base_agent").BaseAgent;
 
-var _buildAgent = function _buildAgent(platform, config) {
+var _buildAgent = function _buildAgent(platform, config, logger) {
   var arch = process.arch;
   platform = platform ? platform : process.platform;
 
   // Set up the platform
   if(typeof platform == 'object') {
+    logger = config;
     config = platform;
     platform = process.platform;
   }
 
   if("darwin" == platform) {
-    return new OSXTopAgent(config);
+    return new OSXTopAgent(config, logger);
   } else if("linux" == platform) {
-    return new LinuxTopAgent(config);
+    return new LinuxTopAgent(config, logger);
   }
 
   // Throw an unsuported error
@@ -27,10 +29,12 @@ var _buildAgent = function _buildAgent(platform, config) {
 /*******************************************************************************
  *  OSX IO Stat agent
  *******************************************************************************/
-var OSXTopAgent = function OSXTopAgent(config) {
+var OSXTopAgent = function OSXTopAgent(config, logger) {
+  BaseAgent.call(this);
+  // Save config settings
+  this.logger = logger;
   this.config = config;
   this._singleRun = true;
-  BaseAgent.call(this);
 }
 
 util.inherits(OSXTopAgent, BaseAgent);
@@ -276,9 +280,10 @@ OSXTopAgent.prototype.start = function start() {
   this.agent = exec('top -S -r -l 1',
     function (error, stdout, stderr) {
       if(error !== null) {
-        console.log('exec error: ' + error);
+        if(self.logger) self.logger.error(format("[top]:agent received error:%s", error.toString()));
         self.emit("error", error);
       } else if(stderr != null && stderr.length > 0) {
+        if(self.logger) self.logger.error(format("[top]:agent received error:%s", stderr.toString()));
         self.emit("error", stderr);
       } else {
         var object = self._parseTopEntry(self, stdout);
@@ -299,11 +304,13 @@ OSXTopAgent.prototype.stop = function stop() {
 /*******************************************************************************
  *  Linux IO Stat agent
  *******************************************************************************/
-var LinuxTopAgent = function OSXTopAgent(config) {
-  this.config = config;
-  this._singleRun = true;
+var LinuxTopAgent = function OSXTopAgent(config, logger) {
   // Inherit the event emitter
   EventEmitter.call(this);
+  // Save config settings
+  this.logger = logger;
+  this.config = config;
+  this._singleRun = true;
 }
 
 util.inherits(LinuxTopAgent, EventEmitter);
@@ -433,6 +440,7 @@ LinuxTopAgent.prototype.start = function start() {
   });
 
   this.agent.stderr.on("data", function(data) {
+    if(self.logger) self.logger.error(format("[top]:agent received error:%s", data.toString()));
     self.emit("error", data);
   })
 

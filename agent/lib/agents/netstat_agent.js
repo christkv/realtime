@@ -3,20 +3,21 @@ var EventEmitter = require('events').EventEmitter,
   spawn = require('child_process').spawn,
   BaseAgent = require("./base_agent").BaseAgent;
 
-var _buildAgent = function _buildAgent(platform, config) {
+var _buildAgent = function _buildAgent(platform, config, logger) {
   var arch = process.arch;
   var platform = platform ? platform : process.platform;
 
   // Set up the platform
   if(typeof platform == 'object') {
+    logger = config;
     config = platform;
     platform = process.platform;
   }
 
   if("darwin" == platform) {
-    return new OSXNetstatAgent(config);
+    return new OSXNetstatAgent(config, logger);
   } else if("linux" == platform) {
-    return new LinuxNetstatAgent(config);
+    return new LinuxNetstatAgent(config, logger);
   }
 
   // Throw an unsuported error
@@ -26,8 +27,11 @@ var _buildAgent = function _buildAgent(platform, config) {
 /*******************************************************************************
  *  OSX IO Stat agent
  *******************************************************************************/
-var OSXNetstatAgent = function OSXNetstatAgent() {
+var OSXNetstatAgent = function OSXNetstatAgent(config, logger) {
   BaseAgent.call(this);
+
+  this.config = config;
+  this.logger = logger;
 }
 
 util.inherits(OSXNetstatAgent, BaseAgent);
@@ -74,6 +78,7 @@ OSXNetstatAgent.prototype.start = function start() {
   });
 
   this.agent.stderr.on("data", function(data) {
+    if(self.logger) self.logger.error(format("[netstat]:agent received error:%s", data.toString()));
     self.emit("error", data);
   })
 
@@ -94,9 +99,12 @@ OSXNetstatAgent.prototype.stop = function stop() {
 /*******************************************************************************
  *  Linux IO Stat agent
  *******************************************************************************/
-var LinuxNetstatAgent = function LinuxNetstatAgent() {
+var LinuxNetstatAgent = function LinuxNetstatAgent(config, logger) {
   // Inherit the event emitter
   EventEmitter.call(this);
+  // Save config settings
+  this.logger = logger;
+  this.config = config;
   // Used to validate keys
   this.keys = {};
   // Current chunk of data
@@ -230,6 +238,7 @@ LinuxNetstatAgent.prototype.start = function start() {
   });
 
   this.agent.stderr.on("data", function(data) {
+    if(self.logger) self.logger.error(format("[netstat]:agent received error:%s", data.toString()));
     self.emit("error", data);
   })
 

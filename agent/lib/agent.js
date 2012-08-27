@@ -9,7 +9,9 @@ var nopt = require("nopt")
   , path = require("path");
 
 // Agents
-var top_agent = require('./agents/top_agent');
+var top_agent = require('./agents/top_agent'),
+  iostat_agent = require('./agents/iostat_agent'),
+  netstat_agent = require('./agents/netstat_agent');
 
 var Agent = function Agent(config) {
   EventEmitter.call(this);
@@ -33,10 +35,12 @@ var Agent = function Agent(config) {
 inherits(Agent, EventEmitter);
 
 Agent.prototype.start = function start() {
+  var self = this;
   // Setup the server connection for reporting the numbers
-  _connectToServer(this);
-  // Unpack the parameters and instantiate the components
-  _setUpAgents(this);
+  _connectToServer(self, function() {
+    // Unpack the parameters and instantiate the components
+    _setUpAgents(self);
+  });
 }
 
 Agent.prototype.shutdown = function shutdown() {
@@ -49,27 +53,30 @@ Agent.prototype.shutdown = function shutdown() {
   }
 }
 
-var _errorHandler = function _errorHandler(event, self) {
+var _connectionErrorHandler = function _connectionErrorHandler(event, self) {
   return function(err) {
     if(self.logger && err != true) self.logger.error(format("agent received error:%s", err.toString()));
     if(err != null) self.shutdown();
   }
 }
 
-var _dataHandler = function _dataHandler(self) {
+var _connectionDataHandler = function _connectionDataHandler(self) {
   return function(data) {
     if(logger) logger.info(format("agent received data:%s", JSON.stringify(data)));
   }
 }
 
-var _connectToServer = function _connectToServer(self) {
+var _connectToServer = function _connectToServer(self, callback) {
   this.client = new WebSocketClient();
-  this.client.on('connectFailed', _errorHandler('connectFailed', self));
+  this.client.on('connectFailed', _connectionErrorHandler('connectFailed', self));
   this.client.on('connect', function(connection) {
     self.connection = connection;
-    self.connection.on('error', _errorHandler('error', self));
-    self.connection.on('close', _errorHandler('error', self));
-    self.connection.on('message', _dataHandler('message', self));
+    self.connection.on('error', _connectionErrorHandler('error', self));
+    self.connection.on('close', _connectionErrorHandler('error', self));
+    self.connection.on('message', _connectionDataHandler('message', self));
+
+    // Callback to start
+    callback(null, null);
   });
 
   // Connect to the websocket
@@ -108,7 +115,7 @@ var _setUpAgents = function _setUpAgents(self) {
 }
 
 // Handles incoming data
-var dataHandler = function dataHandler(name, agent, self) {
+var _agentDataHandler = function _agentDataHandler(name, agent, self) {
   var logger = self.logger;
 
   return function(data) {
@@ -116,14 +123,14 @@ var dataHandler = function dataHandler(name, agent, self) {
     if(logger) logger.debug(JSON.stringify(data));
 
     // If we are connected, fire off the message
-    if(self.running) {
+    if(self.running && self.connection) {
       self.connection.sendUTF(JSON.stringify(data));
     }
   }
 }
 
 // Handles end commands from agents
-var endHandler = function endHandler(name, agent, self) {
+var _agentEndHandler = function _agentEndHandler(name, agent, self) {
   var logger = self.logger;
 
   return function(code) {
@@ -144,7 +151,7 @@ var endHandler = function endHandler(name, agent, self) {
 }
 
 // Handles error commands
-var errorHandler = function errorHandler(name, agent, self) {
+var _agentErrorHandler = function _agentErrorHandler(name, agent, self) {
   var logger = self.logger;
 
   return function(err) {
@@ -159,12 +166,30 @@ var errorHandler = function errorHandler(name, agent, self) {
 
 // Seup top agent
 var _configureTopAgent = function _configureTopAgent(self, config) {
-  // Create the agent
-  var agent = top_agent.build(config);
+  if(self.logger) self.logger.info(format("[%s]:agent starting with configuration:%s", 'top', JSON.stringify(config)));
+  // Start agent
+  _startAgent(self, 'top', top_agent.build(config, self.logger));
+}
+
+// Setup iostat agent
+var _configureIoStatAgent = function _configureIoStatAgent(self, config) {
+  if(self.logger) self.logger.info(format("[%s]:agent starting with configuration:%s", 'iostat', JSON.stringify(config)));
+  // Start agent
+  _startAgent(self, 'iostat', iostat_agent.build(config, self.logger));
+}
+
+// Setup netstat agent
+var _configureNetStatAgent = function _configureNetStatAgent(self, config) {
+  if(self.logger) self.logger.info(format("[%s]:agent starting with configuration:%s", 'netstat', JSON.stringify(config)));
+  // Start agent
+  _startAgent(self, 'netstat', netstat_agent.build(config, self.logger));
+}
+
+var _startAgent = function(self, name, agent) {
   // Add listeners
-  agent.on("data", dataHandler("top", agent, self));
-  agent.on("end", endHandler("top", agent, self));
-  agent.on("error", errorHandler("top", agent, self));
+  agent.on("data", _agentDataHandler("top", agent, self));
+  agent.on("end", _agentEndHandler("top", agent, self));
+  agent.on("error", _agentErrorHandler("top", agent, self));
 
   try {
     // Boot it up
@@ -172,20 +197,13 @@ var _configureTopAgent = function _configureTopAgent(self, config) {
     // Add the agent to the list of active agents
     self.agents.push(agent);
   } catch(err) {
-    if(logger) logger.error(format("[%s]:agent received error:%s", name, err.toString()));
+    if(self.logger) self.logger.error(format("[%s]:agent received error:%s", name, err.toString()));
   }
-}
-
-// Setup iostat agent
-var _configureIoStatAgent = function _configureIoStatAgent(self, config) {
-}
-
-// Setup netstat agent
-var _configureNetStatAgent = function _configureNetStatAgent(self, config) {
 }
 
 // Setup mongodb agent
 var _configureMongoDBAgent = function _configureMongoDBAgent(self, config) {
+  if(self.logger) self.logger.info(format("[%s]:agent starting with configuration:%s", 'mongodb', JSON.stringify(config)));
 }
 
 /*******************************************************************************
