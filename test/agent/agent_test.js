@@ -1,7 +1,10 @@
 var fs = require('fs')
   , http = require('http')
   , Agent = require('../../agent/lib/agent').Agent
-  , WSServer = require('../../lib/api/ws_server').WSServer;
+  , WSServer = require('../../lib/api/ws_server').WSServer
+  , ObjectID = require('mongodb').ObjectID
+  , Server = require('mongodb').Server
+  , Db = require('mongodb').Db;
 
 exports.setUp = function(callback) {
   try {
@@ -25,6 +28,10 @@ exports['Should setup agent with config'] = function(test) {
     host: '192.168.43.126',
     // Port
     port: 9090,
+    // API Key (user identifier)
+    api_key: '11111111111111111111111111111',
+    // Secret key used to encrypt the content for transport
+    secret_key: 'abcdefabcdefabcdefabcdefabcdefabcdef',
     // Agents to use
     agents: [
       {
@@ -56,24 +63,36 @@ exports['Should setup agent with config'] = function(test) {
     console.log((new Date()) + ' Server is listening on port 9090');
   });
 
-  // Start the server
-  var agent = new Agent(cfg);
-  // Create a responding server
-  var wsServer = new WSServer(server);
-  // Listen to one event coming through
-  wsServer.on("data", function(data, connection) {
-    test.ok(data != null);
-    test.ok(connection != null);
-    // Shutdown all the connections
-    wsServer.stop();
-    server.close();
-    // Shutdown the agent
-    agent.shutdown();
-    // Test done
-    test.done();
-  });
-  // Start the server
-  wsServer.start();
-  // Start the agent
-  agent.start();
+  // // The db server
+  // var db = new Db('realtime_test', new Server('localhost', 27017));
+  // db.open(function(err, db) {
+    // Start the server
+    var agent = new Agent(cfg);
+    // Create a responding server
+    var wsServer = new WSServer(server, null);
+    // Mock out the fetchKey so we don't use mongodb
+    wsServer.user.fetchSecretKeyByApiKey = function(apiKey, callback) {
+      callback(null, {_id: new ObjectID(), secret_key:'abcdefabcdefabcdefabcdefabcdefabcdef'});
+    }
+    // Listen to one event coming through
+    wsServer.on("data", function(data, connection) {
+      console.log('=====================================================')
+      console.dir(data)
+      test.ok(data != null);
+      test.ok(connection != null);
+      // Shutdown all the connections
+      wsServer.stop();
+      server.close();
+      // Shutdown the agent
+      agent.shutdown();
+      // // Shutdown the db
+      // db.close();
+      // Test done
+      test.done();
+    });
+    // Start the server
+    wsServer.start();
+    // Start the agent
+    agent.start();
+  // });
 }

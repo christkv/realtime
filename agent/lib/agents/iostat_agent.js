@@ -28,12 +28,10 @@ var _buildAgent = function _buildAgent(platform, config, logger) {
  *  OSX IO Stat agent
  *******************************************************************************/
 var OSXIOStatAgent = function OSXIOStatAgent(config, logger) {
-  BaseAgent.call(this);
+  BaseAgent.call(this, 'iostat');
 
   this.config = config;
   this.logger = logger;
-  // Used to just inform the listener of the agent to basic stable info
-  this.agentInformation = {agent: 'iostat', platform: process.platform, arch:process.arch};
 }
 
 util.inherits(OSXIOStatAgent, BaseAgent);
@@ -113,18 +111,15 @@ OSXIOStatAgent.prototype.stop = function stop() {
  *  Linux IO Stat agent
  *******************************************************************************/
 var LinuxIOStatAgent = function LinuxIOStatAgent(config, logger) {
-  // Inherit the event emitter
-  EventEmitter.call(this);
+  BaseAgent.call(this, 'iostat');
   // Save config settings
   this.logger = logger;
   this.config = config;
   // Current chunk of data
   this.data = '';
-  // Used to just inform the listener of the agent to basic stable info
-  this.agentInformation = {agent: 'iostat', platform: process.platform, arch:process.arch};
 }
 
-util.inherits(LinuxIOStatAgent, EventEmitter);
+util.inherits(LinuxIOStatAgent, BaseAgent);
 
 LinuxIOStatAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
   // Add the data

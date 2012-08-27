@@ -30,7 +30,7 @@ var _buildAgent = function _buildAgent(platform, config, logger) {
  *  OSX IO Stat agent
  *******************************************************************************/
 var OSXTopAgent = function OSXTopAgent(config, logger) {
-  BaseAgent.call(this);
+  BaseAgent.call(this, 'top');
   // Save config settings
   this.logger = logger;
   this.config = config;
@@ -307,8 +307,7 @@ OSXTopAgent.prototype.stop = function stop() {
  *  Linux IO Stat agent
  *******************************************************************************/
 var LinuxTopAgent = function OSXTopAgent(config, logger) {
-  // Inherit the event emitter
-  EventEmitter.call(this);
+  BaseAgent.call(this, 'top');
   // Save config settings
   this.logger = logger;
   this.config = config;
@@ -317,7 +316,7 @@ var LinuxTopAgent = function OSXTopAgent(config, logger) {
   this.agentInformation = {agent: 'iostat', platform: process.platform, arch:process.arch};
 }
 
-util.inherits(LinuxTopAgent, EventEmitter);
+util.inherits(LinuxTopAgent, BaseAgent);
 
 LinuxTopAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
   // Split up the lines

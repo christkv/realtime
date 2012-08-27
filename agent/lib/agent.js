@@ -6,6 +6,7 @@ var nopt = require("nopt")
   , format = require('util').format
   , Stream = require("stream").Stream
   , inherits = require('util').inherits
+  , crypto = require('crypto')
   , path = require("path");
 
 // Agents
@@ -19,10 +20,15 @@ var Agent = function Agent(config) {
   this.host = config.host || "localhost";
   this.port = config.port || 9090;
   this.log = config.log;
+  this.apiKey = config.api_key || null;
+  this.secretKey = config.secret_key || null;
+  this.cryptoAlgorithm = config.crypto_algorithm || 'aes256';
   this.retries = config.retries || 3;
   this.agentConfigs = Array.isArray(config.agents)
                       ? config.agents
                       : [{agent:"top"}, {agent:"iostat"}, {agent:"netstat"}];
+  // If no apiKey provided throw an error
+  if(this.apiKey == null) throw new Error("api key must be provided");
   // All agent instances
   this.running = true;
   this.agents = [];
@@ -120,10 +126,29 @@ var _agentDataHandler = function _agentDataHandler(name, agent, self) {
   return function(data) {
     if(logger) logger.info(format("[%s]:agent received data", name));
     if(logger) logger.debug(JSON.stringify(data));
-
     // If we are connected, fire off the message
     if(self.running && self.connection) {
-      self.connection.sendUTF(JSON.stringify(data));
+      // Set the final object
+      var finalObject = data;
+      // If we have an apikey and secretKey we are going to encrypt the content
+      if(self.apiKey != null && self.secretKey) {
+        // Encryp the data as base 64 string
+        var cipher = crypto.createCipher(self.cryptoAlgorithm, self.secretKey);
+        // Encrypt the data
+        var encryptedData = cipher.update(JSON.stringify(data), 'utf8', 'base64');
+        encryptedData = encryptedData + cipher.final('base64');
+        // Set the encrypted info
+        finalObject = {
+          api_key: self.apiKey,
+          encrypted: true,
+          data: encryptedData
+        }
+      } else {
+        data.api_key = self.apiKey;
+      }
+
+      // Send the message to the server
+      self.connection.sendUTF(JSON.stringify(finalObject));
     }
   }
 }

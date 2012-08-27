@@ -28,7 +28,7 @@ var _buildAgent = function _buildAgent(platform, config, logger) {
  *  OSX IO Stat agent
  *******************************************************************************/
 var OSXNetstatAgent = function OSXNetstatAgent(config, logger) {
-  BaseAgent.call(this);
+  BaseAgent.call(this, 'netstat');
 
   this.config = config;
   this.logger = logger;
@@ -102,8 +102,7 @@ OSXNetstatAgent.prototype.stop = function stop() {
  *  Linux IO Stat agent
  *******************************************************************************/
 var LinuxNetstatAgent = function LinuxNetstatAgent(config, logger) {
-  // Inherit the event emitter
-  EventEmitter.call(this);
+  BaseAgent.call(this, 'netstat');
   // Save config settings
   this.logger = logger;
   this.config = config;
@@ -115,7 +114,7 @@ var LinuxNetstatAgent = function LinuxNetstatAgent(config, logger) {
   this.agentInformation = {agent: 'iostat', platform: process.platform, arch:process.arch};
 }
 
-util.inherits(LinuxNetstatAgent, EventEmitter);
+util.inherits(LinuxNetstatAgent, BaseAgent);
 
 LinuxNetstatAgent.prototype._parseTopEntry = function _parseTopEntry(self, data) {
   // The disks available
