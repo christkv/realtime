@@ -35,6 +35,8 @@ var OSXTopAgent = function OSXTopAgent(config, logger) {
   this.logger = logger;
   this.config = config;
   this._singleRun = true;
+  // Used to just inform the listener of the agent to basic stable info
+  this.agentInformation = {agent: 'iostat', platform: process.platform, arch:process.arch};
 }
 
 util.inherits(OSXTopAgent, BaseAgent);
@@ -281,14 +283,14 @@ OSXTopAgent.prototype.start = function start() {
     function (error, stdout, stderr) {
       if(error !== null) {
         if(self.logger) self.logger.error(format("[top]:agent received error:%s", error.toString()));
-        self.emit("error", error);
+        self.emitObject("error", error);
       } else if(stderr != null && stderr.length > 0) {
         if(self.logger) self.logger.error(format("[top]:agent received error:%s", stderr.toString()));
-        self.emit("error", stderr);
+        self.emitObject("error", stderr);
       } else {
         var object = self._parseTopEntry(self, stdout);
-        if(object) self.emit("data", object);
-        self.emit("end", 0);
+        if(object) self.emitObject("data", object);
+        self.emitObject("end", 0);
       }
   });
 }
@@ -311,6 +313,8 @@ var LinuxTopAgent = function OSXTopAgent(config, logger) {
   this.logger = logger;
   this.config = config;
   this._singleRun = true;
+  // Used to just inform the listener of the agent to basic stable info
+  this.agentInformation = {agent: 'iostat', platform: process.platform, arch:process.arch};
 }
 
 util.inherits(LinuxTopAgent, EventEmitter);
@@ -441,13 +445,13 @@ LinuxTopAgent.prototype.start = function start() {
 
   this.agent.stderr.on("data", function(data) {
     if(self.logger) self.logger.error(format("[top]:agent received error:%s", data.toString()));
-    self.emit("error", data);
+    self.emitObject("error", data);
   })
 
   this.agent.on("exit", function(code) {
     var object = self._parseTopEntry(self, allData);
-    if(object) self.emit("data", object);
-    self.emit("end", code);
+    if(object) self.emitObject("data", object);
+    self.emitObject("end", code);
   });
 }
 

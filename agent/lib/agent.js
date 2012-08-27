@@ -117,7 +117,6 @@ var _setUpAgents = function _setUpAgents(self) {
 // Handles incoming data
 var _agentDataHandler = function _agentDataHandler(name, agent, self) {
   var logger = self.logger;
-
   return function(data) {
     if(logger) logger.info(format("[%s]:agent received data", name));
     if(logger) logger.debug(JSON.stringify(data));
@@ -132,7 +131,6 @@ var _agentDataHandler = function _agentDataHandler(name, agent, self) {
 // Handles end commands from agents
 var _agentEndHandler = function _agentEndHandler(name, agent, self) {
   var logger = self.logger;
-
   return function(code) {
     if(logger) logger.info(format("[%s]:agent recived end with code %s", name, code));
     // if we have a single run function start it again
@@ -153,7 +151,6 @@ var _agentEndHandler = function _agentEndHandler(name, agent, self) {
 // Handles error commands
 var _agentErrorHandler = function _agentErrorHandler(name, agent, self) {
   var logger = self.logger;
-
   return function(err) {
     if(self.running) {
       if(logger) logger.error(format("[%s]:agent received error:%s", name, err.toString()));

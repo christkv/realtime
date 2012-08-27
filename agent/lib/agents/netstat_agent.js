@@ -32,6 +32,8 @@ var OSXNetstatAgent = function OSXNetstatAgent(config, logger) {
 
   this.config = config;
   this.logger = logger;
+  // Used to just inform the listener of the agent to basic stable info
+  this.agentInformation = {agent: 'iostat', platform: process.platform, arch:process.arch};
 }
 
 util.inherits(OSXNetstatAgent, BaseAgent);
@@ -74,16 +76,16 @@ OSXNetstatAgent.prototype.start = function start() {
   // Add listeners
   this.agent.stdout.on("data", function(data) {
     var object = self._parseTopEntry(self, data);
-    if(object != null) self.emit("data", object);
+    if(object != null) self.emitObject("data", object);
   });
 
   this.agent.stderr.on("data", function(data) {
     if(self.logger) self.logger.error(format("[netstat]:agent received error:%s", data.toString()));
-    self.emit("error", data);
+    self.emitObject("error", data);
   })
 
   this.agent.on("exit", function(code) {
-    self.emit("end", code);
+    self.emitObject("end", code);
   });
 }
 
@@ -93,7 +95,7 @@ OSXNetstatAgent.prototype.stop = function stop() {
   }
 
   // Emit end signal
-  this.emit("end", 0);
+  this.emitObject("end", 0);
 }
 
 /*******************************************************************************
@@ -109,6 +111,8 @@ var LinuxNetstatAgent = function LinuxNetstatAgent(config, logger) {
   this.keys = {};
   // Current chunk of data
   this.data = '';
+  // Used to just inform the listener of the agent to basic stable info
+  this.agentInformation = {agent: 'iostat', platform: process.platform, arch:process.arch};
 }
 
 util.inherits(LinuxNetstatAgent, EventEmitter);
@@ -233,17 +237,17 @@ LinuxNetstatAgent.prototype.start = function start() {
   this.agent.stdout.on("data", function(data) {
     var objects = self._parseTopEntry(self, data);
     for(var i = 0; i < objects.length; i++) {
-      self.emit("data", objects[i]);
+      self.emitObject("data", objects[i]);
     }
   });
 
   this.agent.stderr.on("data", function(data) {
     if(self.logger) self.logger.error(format("[netstat]:agent received error:%s", data.toString()));
-    self.emit("error", data);
+    self.emitObject("error", data);
   })
 
   this.agent.on("exit", function(code) {
-    self.emit("end", code);
+    self.emitObject("end", code);
   });
 }
 
@@ -253,7 +257,7 @@ LinuxNetstatAgent.prototype.stop = function stop() {
   }
 
   // Emit end signal
-  this.emit("end", 0);
+  this.emitObject("end", 0);
 }
 
 exports.build = _buildAgent;

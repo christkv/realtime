@@ -11,4 +11,8 @@ BaseAgent.prototype.singleRun = function singleRun() {
   return typeof this._singleRun == 'boolean' ? this._singleRun : false;
 }
 
+BaseAgent.prototype.emitObject = function(event, object) {
+  this.emit(event, {info:this.agentInformation, data: object});
+}
+
 exports.BaseAgent = BaseAgent;
