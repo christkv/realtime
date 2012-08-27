@@ -130,6 +130,11 @@ var _agentDataHandler = function _agentDataHandler(name, agent, self) {
     if(self.running && self.connection) {
       // Set the final object
       var finalObject = data;
+      // Add the information about the originating address of the data
+      if(!data.info) data.info = {};
+      data.info.net = self.connection.socket.address();
+      // Add the timestamp since 1970 in miliseconds
+      data.at = new Date().getTime();
       // If we have an apikey and secretKey we are going to encrypt the content
       if(self.apiKey != null && self.secretKey) {
         // Encryp the data as base 64 string

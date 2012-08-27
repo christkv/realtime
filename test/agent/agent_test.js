@@ -63,36 +63,42 @@ exports['Should setup agent with config'] = function(test) {
     console.log((new Date()) + ' Server is listening on port 9090');
   });
 
-  // // The db server
-  // var db = new Db('realtime_test', new Server('localhost', 27017));
-  // db.open(function(err, db) {
-    // Start the server
-    var agent = new Agent(cfg);
+  // Start the server
+  var agent = new Agent(cfg);
+
+  // Connect to the mongodb
+  new Db("realtime_test", new Server('localhost', 27017)).open(function(err, db) {
     // Create a responding server
-    var wsServer = new WSServer(server, null);
+    var wsServer = new WSServer(server, db);
+
     // Mock out the fetchKey so we don't use mongodb
     wsServer.user.fetchSecretKeyByApiKey = function(apiKey, callback) {
       callback(null, {_id: new ObjectID(), secret_key:'abcdefabcdefabcdefabcdefabcdefabcdef'});
     }
+
     // Listen to one event coming through
     wsServer.on("data", function(data, connection) {
-      console.log('=====================================================')
       console.dir(data)
+
       test.ok(data != null);
       test.ok(connection != null);
+      test.ok(data.info != null && typeof data.info == 'object');
+      test.ok(data.data != null && typeof data.data == 'object');
+      test.ok(data.api_key != null && typeof data.api_key == 'string');
       // Shutdown all the connections
       wsServer.stop();
       server.close();
       // Shutdown the agent
       agent.shutdown();
-      // // Shutdown the db
-      // db.close();
+      // Shutdown the db
+      db.close();
       // Test done
       test.done();
     });
+
     // Start the server
     wsServer.start();
     // Start the agent
     agent.start();
-  // });
+  });
 }
