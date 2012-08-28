@@ -1,0 +1,87 @@
+{
+  "info" : {
+    "agent" : "netstat",
+    "platform" : "linux",
+    "arch" : "x64",
+    "pid" : 2988,
+    "net" : {
+      "address" : "10.211.55.3",
+      "family" : "IPv4",
+      "port" : 43159
+    }
+  },
+  "data" : {
+    "eth1" : {
+      "ts" : "Tue Aug 28 2012 12:34:24 GMT+0200 (CEST)",
+      "input" : {
+        "packets" : 13914,
+        "errs" : 0,
+        "dropped" : 0,
+        "overruns" : 0,
+        "frame" : 0,
+        "bytes" : 17733540
+      },
+      "output" : {
+        "packets" : 5054,
+        "errs" : 0,
+        "dropped" : 0,
+        "overruns" : 0,
+        "frame" : 0,
+        "bytes" : 712838
+      },
+      "link_encap" : "Ethernet",
+      "hw_addr" : "00:1c:42:c0:77:27",
+      "inet_addr" : "10.211.55.3",
+      "bcast" : "10.211.55.255",
+      "mask" : "255.255.255.0",
+      "inet_6_addr" : "fe80::21c:42ff:fec0:7727/64",
+      "scope" : "Link",
+      "supports" : {
+        "UP" : true,
+        "BROADCAST" : true,
+        "RUNNING" : true,
+        "MULTICAST" : true
+      },
+      "mtu" : 1500,
+      "metric" : 1,
+      "colls" : 0,
+      "txqueuelen" : 1000
+    },
+    "lo" : {
+      "ts" : "Tue Aug 28 2012 12:34:24 GMT+0200 (CEST)",
+      "input" : {
+        "packets" : 898,
+        "errs" : 0,
+        "dropped" : 0,
+        "overruns" : 0,
+        "frame" : 0,
+        "bytes" : 83688
+      },
+      "output" : {
+        "packets" : 898,
+        "errs" : 0,
+        "dropped" : 0,
+        "overruns" : 0,
+        "frame" : 0,
+        "bytes" : 83688
+      },
+      "link_encap" : "Local",
+      "hw_addr" : "",
+      "inet_addr" : "127.0.0.1",
+      "mask" : "255.0.0.0",
+      "inet_6_addr" : "::1/128",
+      "scope" : "Host",
+      "supports" : {
+        "UP" : true,
+        "LOOPBACK" : true,
+        "RUNNING" : true
+      },
+      "mtu" : 16436,
+      "metric" : 1,
+      "colls" : 0,
+      "txqueuelen" : 0
+    }
+  },
+  "at" : 1346150064212,
+  "api_key" : 1,
+}

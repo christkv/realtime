@@ -286,8 +286,10 @@ OSXTopAgent.prototype.start = function start() {
         if(self.logger) self.logger.error(format("[top]:agent received error:%s", stderr.toString()));
         self.emitObject("error", stderr);
       } else {
-        var object = self._parseTopEntry(self, stdout);
-        if(object) self.emitObject("data", object);
+        try {
+          var object = self._parseTopEntry(self, stdout);
+          if(object) self.emitObject("data", object);
+        } catch(err) {}
         self.emitObject("end", 0);
       }
   });
@@ -444,8 +446,10 @@ LinuxTopAgent.prototype.start = function start() {
   })
 
   this.agent.on("exit", function(code) {
-    var object = self._parseTopEntry(self, allData);
-    if(object) self.emitObject("data", object);
+    try {
+      var object = self._parseTopEntry(self, allData);
+      if(object) self.emitObject("data", object);
+    } catch(err) {}
     self.emitObject("end", code);
   });
 }

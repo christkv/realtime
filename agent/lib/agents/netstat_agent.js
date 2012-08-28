@@ -73,8 +73,10 @@ OSXNetstatAgent.prototype.start = function start() {
   this.agent = spawn('netstat', ['-w', '1']);
   // Add listeners
   this.agent.stdout.on("data", function(data) {
-    var object = self._parseTopEntry(self, data);
-    if(object != null) self.emitObject("data", object);
+    try {
+      var object = self._parseTopEntry(self, data);
+      if(object != null) self.emitObject("data", object);
+    } catch(err) {}
   });
 
   this.agent.stderr.on("data", function(data) {
@@ -230,10 +232,12 @@ LinuxNetstatAgent.prototype.start = function start() {
   this.agent = spawn('netstat', ['-i', '-e', '-c']);
   // Add listeners
   this.agent.stdout.on("data", function(data) {
-    var objects = self._parseTopEntry(self, data);
-    for(var i = 0; i < objects.length; i++) {
-      self.emitObject("data", objects[i]);
-    }
+    try {
+      var objects = self._parseTopEntry(self, data);
+      for(var i = 0; i < objects.length; i++) {
+        self.emitObject("data", objects[i]);
+      }
+    } catch(err) {}
   });
 
   this.agent.stderr.on("data", function(data) {

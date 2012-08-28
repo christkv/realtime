@@ -1,0 +1,32 @@
+{
+  "info" : {
+    "agent" : "iostat",
+    "platform" : "linux",
+    "arch" : "x64",
+    "pid" : 2988,
+    "net" : {
+      "address" : "10.211.55.3",
+      "family" : "IPv4",
+      "port" : 43159
+    }
+  },
+  "data" : {
+    "disks" : {
+      "sda" : {
+        "read_req_sec" : 2.33,
+        "write_req_sec" : 3.37,
+        "issued_read_req_sec" : 4.98,
+        "issued_write_req_sec" : 1.85,
+        "kb_read_sec" : 117.64,
+        "kb_write_sec" : 44.45,
+        "avg_sec_size" : 47.44,
+        "avg_queue_length" : 0.04,
+        "avg_io_wait_time" : 6.13,
+        "avg_service_time" : 5.18,
+        "cpu_saturation" : 8.7
+      }
+    }
+  },
+  "at" : 1346150062193,
+  "api_key" : 1,
+}
