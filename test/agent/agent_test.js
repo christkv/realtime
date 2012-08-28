@@ -78,27 +78,30 @@ exports['Should setup agent with config'] = function(test) {
 
     // Listen to one event coming through
     wsServer.on("data", function(data, connection) {
-      console.dir(data)
+      console.log("------------------------------------------------------------")
+      console.log("------------------------------------------------------------")
+      console.log(JSON.stringify(data, null, 2))
 
-      test.ok(data != null);
-      test.ok(connection != null);
-      test.ok(data.info != null && typeof data.info == 'object');
-      test.ok(data.data != null && typeof data.data == 'object');
-      test.ok(data.api_key != null && typeof data.api_key == 'string');
-      // Shutdown all the connections
-      wsServer.stop();
-      server.close();
-      // Shutdown the agent
-      agent.shutdown();
-      // Shutdown the db
-      db.close();
-      // Test done
-      test.done();
+      // test.ok(data != null);
+      // test.ok(connection != null);
+      // test.ok(data.info != null && typeof data.info == 'object');
+      // test.ok(data.data != null && typeof data.data == 'object');
+      // test.ok(data.api_key != null && typeof data.api_key == 'string');
+      // // Shutdown all the connections
+      // wsServer.stop();
+      // server.close();
+      // // Shutdown the agent
+      // agent.shutdown();
+      // // Shutdown the db
+      // db.close();
+      // // Test done
+      // test.done();
     });
 
     // Start the server
-    wsServer.start();
-    // Start the agent
-    agent.start();
+    wsServer.start(function() {
+      // Start the agent
+      agent.start();
+    });
   });
 }

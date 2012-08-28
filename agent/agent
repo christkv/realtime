@@ -1,42 +1,101 @@
-var Agent = require("./agents/agent").Agent;
+#!/usr/bin/env node
+var fs = require('fs'),
+  format = require('util').format,
+  Agent = require('./lib/agent').Agent;
 
-// Known options
-var knownOpts = {   "help" : Boolean
-                  , "host" : String
-                  , "port" : String
-                  , "cfg" : String };
-// Shorthand for the options
-var shortHands = {};
-// Parse all options
-var parsed = nopt(knownOpts, shortHands, process.argv, 2)
+// Describe all help methods
+var argv = require('optimist')
+  .usage("Agent usage")
+  // Api key option
+  .demand('k')
+  .alias('k', 'api_key')
+  .describe('k', 'api key, default: none, must be provided')
+  // Help option
+  .alias('h', 'help')
+  .describe('h', 'display help for command')
+  // Secret key option
+  .alias('s', 'secret_key')
+  .describe('s', 'secret key, default: none')
+  // Crypto algorithm
+  .alias('c', 'crypto_algorithm')
+  .describe('c', 'crypto_algorithm key, default: aes256')
+  .default('c', 'aes256')
+  // Retries
+  .alias('r', 'retries')
+  .describe('r', 'number of agent retries, default: 3')
+  .default('r', 3)
+  // Agents
+  .alias('a', 'agents')
+  .describe('a', 'list of agents to try, default: "top,iostat, netstat"')
+  .default('a', ["top", "iostat", "netstat"])
+  // Host
+  .alias('w', 'host')
+  .describe('w', 'reporter host, default: localhost')
+  // Set up defaults
+  .default('w', 'localhost')
+  // Port
+  .alias('p', 'port')
+  .describe('p', 'reporter port, default: 9090')
+  // Set up defaults
+  .default('p', 9090)
+  // Configuraiton
+  .alias('f', 'cfg')
+  .describe('f', 'configuration file location, default none')
+  // Configuraiton
+  .alias('l', 'log')
+  .describe('l', 'log file, default ./output.log')
+  .default('l', './output.log')
+  // Return arguments
+  .argv;
 
-// If we provided the help option
-if(parsed.help) {
-  console.log("agent usage");
-  console.log("\t[--help] :: display help for command");
-  console.log("\t[--host] :: reporter host, default: localhost");
-  console.log("\t[--port] :: reporter port, default: 9090");
-  console.log("\t[--cfg] :: configuration file location, default none");
-  return;
+// Process any remaining information
+if(typeof argv.agents == 'string') {
+  argv.agents = argv.a = argv.agents.trim().split(',').map(function(x) { return x.trim() });
+} else if(typeof argv.agents == 'boolean') {
+  argv.agents = argv.a = ["top", "iostat", "netstat"];
 }
 
-// Create a new agent
-var agent = new Agent(parsed);
+// Format the agents correctly
+argv.agents = argv.agents.map(function(agent) { return {agent:agent}; });
 
-// KnownOptions
-// var knownOpts = {   "foo" : [String, null]
-//                   , "bar" : [Stream, Number]
-//                   , "baz" : path
-//                   , "bloo" : [ "big", "medium", "small" ]
-//                   , "flag" : Boolean
-//                   , "pick" : Boolean
-//                   , "many" : [String, Array] }
+// Validate the configuration string
+if(typeof argv.cfg == 'string') {
+  // Check if the file exists
+  try {
+    fs.statSync(argv.cfg);
+  } catch(err) {
+    return console.log(format("configuration file %s was not found", argv.cfg));
+  }
+}
 
-// Known options
-// // Short hand aliases
-// var shortHands = { "foofoo" : ["--foo", "Mr. Foo"]
-//                  , "b7" : ["--bar", "7"]
-//                  , "m" : ["--bloo", "medium"]
-//                  , "p" : ["--pick"]
-//                  , "f" : ["--flag"]
-//                  }
+// Just validate the rest of the parameter types
+if(argv.port && !(typeof argv.port == 'number')) return console.log(format("--%s/-%s must be a number", "port", "p"));
+if(argv.retries && !(typeof argv.retries == 'number')) return console.log(format("--%s/-%s must be a number", "retries", "r"));
+
+// Build the configuration object
+// If we have provided a cfg file
+if(typeof argv.cfg == 'string') {
+  try {
+    var data = fs.readFileSync(argv.cfg, 'utf8');
+    // parseJSON
+    var config = JSON.parse(data);
+    var agent = new Agent(config);
+    agent.start();
+  } catch(err) {
+    console.log(format("configuration file: %s not found or json invalid", parsed.cfg));
+  }
+} else {
+  var config = {
+      host: argv.host
+    , port: argv.port
+    , api_key: argv.api_key
+    , secret_key: argv.secret_key
+    , retries: argv.retries
+    , crypto_algorithm: argv.crypto_algorithm
+    , agents: argv.agents
+    , log: argv.log
+  }
+
+  var agent = new Agent(config);
+  agent.start();
+}

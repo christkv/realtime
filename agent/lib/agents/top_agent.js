@@ -35,8 +35,6 @@ var OSXTopAgent = function OSXTopAgent(config, logger) {
   this.logger = logger;
   this.config = config;
   this._singleRun = true;
-  // Used to just inform the listener of the agent to basic stable info
-  this.agentInformation = {agent: 'iostat', platform: process.platform, arch:process.arch};
 }
 
 util.inherits(OSXTopAgent, BaseAgent);
@@ -312,8 +310,6 @@ var LinuxTopAgent = function OSXTopAgent(config, logger) {
   this.logger = logger;
   this.config = config;
   this._singleRun = true;
-  // Used to just inform the listener of the agent to basic stable info
-  this.agentInformation = {agent: 'iostat', platform: process.platform, arch:process.arch};
 }
 
 util.inherits(LinuxTopAgent, BaseAgent);

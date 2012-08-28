@@ -1,0 +1,28 @@
+{
+    // Host
+    "host": "localhost",
+    // Port
+    "port": 9090,
+    // API Key (user identifier)
+    "api_key": "11111111111111111111111111111",
+    // Secret key used to encrypt the content for transport
+    "secret_key": "abcdefabcdefabcdefabcdefabcdefabcdef",
+    // Agents to use
+    "agents": [
+      {
+        "agent": "iostat", "interval": 1
+      },
+      {
+        "agent": "netstat", "interval": 1
+      },
+      {
+        "agent": "top", "interval": 1
+      },
+      {
+        "agent": "mongodb", "host": "localhost", "port": 27017, "interval": 1
+      }],
+    // Log data to
+    "log": "./tmp/output.log",
+    // Number of retries before giving up
+    "retries": 3
+  }

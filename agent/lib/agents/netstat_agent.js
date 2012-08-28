@@ -32,8 +32,6 @@ var OSXNetstatAgent = function OSXNetstatAgent(config, logger) {
 
   this.config = config;
   this.logger = logger;
-  // Used to just inform the listener of the agent to basic stable info
-  this.agentInformation = {agent: 'iostat', platform: process.platform, arch:process.arch};
 }
 
 util.inherits(OSXNetstatAgent, BaseAgent);
@@ -110,8 +108,6 @@ var LinuxNetstatAgent = function LinuxNetstatAgent(config, logger) {
   this.keys = {};
   // Current chunk of data
   this.data = '';
-  // Used to just inform the listener of the agent to basic stable info
-  this.agentInformation = {agent: 'iostat', platform: process.platform, arch:process.arch};
 }
 
 util.inherits(LinuxNetstatAgent, BaseAgent);
