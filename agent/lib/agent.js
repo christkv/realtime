@@ -214,9 +214,9 @@ var _configureNetStatAgent = function _configureNetStatAgent(self, config) {
 
 var _startAgent = function(self, name, agent) {
   // Add listeners
-  agent.on("data", _agentDataHandler("top", agent, self));
-  agent.on("end", _agentEndHandler("top", agent, self));
-  agent.on("error", _agentErrorHandler("top", agent, self));
+  agent.on("data", _agentDataHandler(name, agent, self));
+  agent.on("end", _agentEndHandler(name, agent, self));
+  agent.on("error", _agentErrorHandler(name, agent, self));
 
   try {
     // Boot it up
