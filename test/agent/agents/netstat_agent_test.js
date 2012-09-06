@@ -1,4 +1,4 @@
-var netstat_agent = require('../../../agent/lib/agents/netstat_agent'),
+var netstat_agent = require('../../../agent/lib/agents/logbased/netstat_agent'),
   fs = require('fs');
 
 exports.setUp = function(callback) {
@@ -30,7 +30,7 @@ exports['Should correctly collect netstat data for two ticks'] = function(test) 
   });
 
   netstat.on("end", function(code) {
-    test.equal(0, code);
+    test.equal(0, code.data);
   });
 
   netstat.on("error", function(err) {

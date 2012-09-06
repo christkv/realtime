@@ -1,4 +1,4 @@
-var top_agent = require('../../../agent/lib/agents/top_agent'),
+var top_agent = require('../../../agent/lib/agents/logbased/top_agent'),
   fs = require('fs');
 
 exports.setUp = function(callback) {
@@ -18,7 +18,7 @@ exports['Should correctly retrieve top results for localhost'] = function(test) 
   var index = 0;
   // Add listener to the agent
   top.on("data", function(data) {
-    test.ok(data.processes);
+    test.ok(data.data.processes);
     // Stop agent
     top.stop();
     // Signal test done
@@ -26,7 +26,7 @@ exports['Should correctly retrieve top results for localhost'] = function(test) 
   });
 
   top.on("end", function(code) {
-    test.equal(0, code);
+    test.equal(0, code.data);
   });
 
   top.on("error", function(err) {

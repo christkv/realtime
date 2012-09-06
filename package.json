@@ -16,7 +16,8 @@
     "express": "latest",
     "mongodb": "latest",
     "ejs": "latest",
-    "async": "latest"
+    "async": "latest",
+    "psutil": "latest"
   },
   "devDependencies": {
     "nodeunit": "latest"
