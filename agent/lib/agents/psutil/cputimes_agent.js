@@ -27,7 +27,7 @@ var _buildAgent = function _buildAgent(platform, config, logger) {
  *  OSX IO Stat agent
  *******************************************************************************/
 var CPUTimesAgent = function CPUTimesAgent(config, logger) {
-  BaseAgent.call(this, 'cpu_timers');
+  BaseAgent.call(this, 'cpu_times');
 
   this.config = config;
   this.logger = logger;
@@ -53,10 +53,10 @@ CPUTimesAgent.prototype.start = function start() {
           self.emitObject("data", counters);
         }
 
-        if(self.running) setTimeout(executeFunction, this.interval);
+        if(self.running) setTimeout(executeFunction, self.interval);
       });
     } else {
-      if(self.running) setTimeout(executeFunction, this.interval);
+      if(self.running) setTimeout(executeFunction, self.interval);
     }
   }
 

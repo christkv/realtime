@@ -27,7 +27,7 @@ var _buildAgent = function _buildAgent(platform, config, logger) {
  *  OSX IO Stat agent
  *******************************************************************************/
 var MemoryStatusAgent = function MemoryStatusAgent(config, logger) {
-  BaseAgent.call(this, 'cpu_timers');
+  BaseAgent.call(this, 'memory_status');
 
   this.config = config;
   this.logger = logger;
@@ -49,7 +49,7 @@ MemoryStatusAgent.prototype.start = function start() {
       self.psutil.virtual_memory(function(err, virtual_memory) {
         if(err) {
           self.emitObject("error", err);
-          if(self.running) setTimeout(executeFunction, this.interval);
+          if(self.running) setTimeout(executeFunction, self.interval);
         } else {
           self.psutil.swap_memory(function(err, swap_memory) {
             if(err) {
@@ -61,16 +61,16 @@ MemoryStatusAgent.prototype.start = function start() {
               });
             }
 
-            if(self.running) setTimeout(executeFunction, this.interval);
+            if(self.running) setTimeout(executeFunction, self.interval);
           });
         }
       });
     } else {
-      if(self.running) setTimeout(executeFunction, this.interval);
+      if(self.running) setTimeout(executeFunction, self.interval);
     }
   }
 
-  setTimeout(executeFunction, this.interval);
+  setTimeout(executeFunction, self.interval);
 }
 
 MemoryStatusAgent.prototype.stop = function stop() {

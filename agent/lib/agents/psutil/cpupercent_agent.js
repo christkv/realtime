@@ -27,7 +27,7 @@ var _buildAgent = function _buildAgent(platform, config, logger) {
  *  OSX IO Stat agent
  *******************************************************************************/
 var CPUPercentAgent = function CPUPercentAgent(config, logger) {
-  BaseAgent.call(this, 'cpu_timers');
+  BaseAgent.call(this, 'cpu_percents');
 
   this.config = config;
   this.logger = logger;

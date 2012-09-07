@@ -27,7 +27,7 @@ var _buildAgent = function _buildAgent(platform, config, logger) {
  *  OSX IO Stat agent
  *******************************************************************************/
 var DiskUsageAgent = function DiskUsageAgent(config, logger) {
-  BaseAgent.call(this, 'cpu_timers');
+  BaseAgent.call(this, 'disk_usage');
 
   this.config = config;
   this.logger = logger;
@@ -35,7 +35,7 @@ var DiskUsageAgent = function DiskUsageAgent(config, logger) {
   // Set running to false
   this.running = false;
   // Default sampling interval
-  this.interval = config.interval ? Math.round(config.interval / 1000) : 1;
+  this.interval = config.interval ? config.interval : 1000;
 }
 
 util.inherits(DiskUsageAgent, BaseAgent);
@@ -55,10 +55,10 @@ DiskUsageAgent.prototype.start = function start() {
           });
         }
 
-        if(self.running) setTimeout(executeFunction, this.interval);
+        if(self.running) setTimeout(executeFunction, self.interval);
       });
     } else {
-      if(self.running) setTimeout(executeFunction, this.interval);
+      if(self.running) setTimeout(executeFunction, self.interval);
     }
   }
 

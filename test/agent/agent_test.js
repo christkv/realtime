@@ -25,7 +25,7 @@ exports.tearDown = function(callback) {
 exports['Should setup agent with config'] = function(test) {
   var cfg = {
     // Host
-    host: '192.168.43.126',
+    host: 'localhost',
     // Port
     port: 9090,
     // API Key (user identifier)
@@ -34,34 +34,33 @@ exports['Should setup agent with config'] = function(test) {
     secret_key: 'abcdefabcdefabcdefabcdefabcdefabcdef',
     // Agents to use
     agents: [
-      {
-        agent: 'iostat', interval: 1
-      },
-      {
-        agent: 'netstat', interval: 1
-      },
-      {
-        agent: 'top', interval: 1
-      },
-      {
-        agent: 'mongodb', host: 'localhost', port: 27017, interval: 1
-      }],
+        {
+          agent: 'cpu_percents', interval: 1000
+        },
+        {
+          agent: 'cpu_times', interval: 1000
+        },
+        {
+          agent: 'disk_usage', interval: 1000
+        },
+        {
+          agent: 'io_counters', interval: 1000
+        },
+        {
+          agent: 'memory_status', interval: 1000
+        },
+        {
+          agent: 'network_counters', interval: 1000
+        },
+        {
+          agent: 'processes', interval: 1000
+        }
+      ],
     // Log data to
     log: './tmp/output.log',
     // Number of retries before giving up
     retries: 3
   }
-
-  // Set up server to use on the app
-  var server = http.createServer(function(request, response) {
-    console.log((new Date()) + ' Received request for ' + request.url);
-    response.writeHead(404);
-    response.end();
-  });
-
-  server.listen(9090, "192.168.43.126", function() {
-    console.log((new Date()) + ' Server is listening on port 9090');
-  });
 
   // Start the server
   var agent = new Agent(cfg);
@@ -69,8 +68,7 @@ exports['Should setup agent with config'] = function(test) {
   // Connect to the mongodb
   new Db("realtime_test", new Server('localhost', 27017)).open(function(err, db) {
     // Create a responding server
-    var wsServer = new WSServer(server, db);
-
+    var wsServer = new WSServer({host:'localhost', port:9090}, db);
     // Mock out the fetchKey so we don't use mongodb
     wsServer.user.fetchSecretKeyByApiKey = function(apiKey, callback) {
       callback(null, {_id: new ObjectID(), secret_key:'abcdefabcdefabcdefabcdefabcdefabcdef'});
@@ -78,24 +76,15 @@ exports['Should setup agent with config'] = function(test) {
 
     // Listen to one event coming through
     wsServer.on("data", function(data, connection) {
-      console.log("------------------------------------------------------------")
-      console.log("------------------------------------------------------------")
-      console.log(JSON.stringify(data, null, 2))
-
-      // test.ok(data != null);
-      // test.ok(connection != null);
-      // test.ok(data.info != null && typeof data.info == 'object');
-      // test.ok(data.data != null && typeof data.data == 'object');
-      // test.ok(data.api_key != null && typeof data.api_key == 'string');
-      // // Shutdown all the connections
-      // wsServer.stop();
-      // server.close();
-      // // Shutdown the agent
-      // agent.shutdown();
-      // // Shutdown the db
-      // db.close();
-      // // Test done
-      // test.done();
+      test.ok(data);
+      // Shutdown the agent
+      agent.shutdown();
+      // Shutdown all the connections
+      wsServer.stop();
+      // Shutdown the db
+      db.close();
+      // Test done
+      test.done();
     });
 
     // Start the server

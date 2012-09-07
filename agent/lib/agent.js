@@ -10,12 +10,19 @@ var nopt = require("nopt")
   , path = require("path");
 
 // Agents
-var top_agent = require('./agents/top_agent'),
-  iostat_agent = require('./agents/iostat_agent'),
-  netstat_agent = require('./agents/netstat_agent');
+var cpupercent_agent = require('./agents/psutil/cpupercent_agent'),
+  cputimes_agent = require('./agents/psutil/cputimes_agent'),
+  diskusage_agent = require('./agents/psutil/diskusage_agent'),
+  iocounters_agent = require('./agents/psutil/iocounters_agent'),
+  memorystatus_agent = require('./agents/psutil/memorystatus_agent'),
+  networkcounters_agent = require('./agents/psutil/networkcounters_agent'),
+  processes_agent = require('./agents/psutil/processes_agent');
 
 var Agent = function Agent(config) {
   EventEmitter.call(this);
+  // Default agents
+  var defaultAgents = ['cpu_percents', 'disk_usage', 'cpu_times', 'io_counters',
+    'memory_status', 'network_counters', 'processes'];
   // Unpack the config
   this.host = config.host || "localhost";
   this.port = config.port || 9090;
@@ -26,7 +33,7 @@ var Agent = function Agent(config) {
   this.retries = config.retries || 3;
   this.agentConfigs = Array.isArray(config.agents)
                       ? config.agents
-                      : [{agent:"top"}, {agent:"iostat"}, {agent:"netstat"}];
+                      : defaultAgents.map(function(value) { return {agent:value}; });
   // If no apiKey provided throw an error
   if(this.apiKey == null) throw new Error("api key must be provided");
   // All agent instances
@@ -95,24 +102,30 @@ var _setUpAgents = function _setUpAgents(self) {
   // Go over all the agents
   for(var i = 0; i < agentConfigs.length; i++) {
     var agentConfig = agentConfigs[i];
+    if(logger) logger.info(format("Configuring %s agent", agentConfig.agent));
 
     switch(agentConfig.agent) {
-      case 'top':
-        if(logger) logger.info("Configuring top agent");
-        _configureTopAgent(self, agentConfig);
+      case 'cpu_percents':
+        _configureAgentAndStart(self, agentConfig.agent, agentConfig, cpupercent_agent.build);
         break;
-      case 'iostat':
-        if(logger) logger.info("Configuring iostat agent");
-        _configureIoStatAgent(self, agentConfig);
+      case 'disk_usage':
+        _configureAgentAndStart(self, agentConfig.agent, agentConfig, diskusage_agent.build);
         break;
-      case 'netstat':
-        if(logger) logger.info("Configuring netstat agent");
-        _configureNetStatAgent(self, agentConfig);
+      case 'cpu_times':
+        _configureAgentAndStart(self, agentConfig.agent, agentConfig, cputimes_agent.build);
         break;
-      case 'mongodb':
-        if(logger) logger.info("Configuring mongodb agent");
-        _configureMongoDBAgent(self, agentConfig);
-        break
+      case 'io_counters':
+        _configureAgentAndStart(self, agentConfig.agent, agentConfig, iocounters_agent.build);
+        break;
+      case 'memory_status':
+        _configureAgentAndStart(self, agentConfig.agent, agentConfig, memorystatus_agent.build);
+        break;
+      case 'network_counters':
+        _configureAgentAndStart(self, agentConfig.agent, agentConfig, networkcounters_agent.build);
+        break;
+      case 'processes':
+        _configureAgentAndStart(self, agentConfig.agent, agentConfig, processes_agent.build);
+        break;
       default:
         if(logger) logger.error("no agent available for " + agentConfig.agent);
         throw new Error("no agent available for " + agentConfig.agent);
@@ -120,6 +133,17 @@ var _setUpAgents = function _setUpAgents(self) {
   }
 }
 
+/*******************************************************************************
+ *  Build and start the agents
+ *******************************************************************************/
+var _configureAgentAndStart = function _configureAgentAndStart(self, agentName, config, buildFunction) {
+  if(self.logger) self.logger.info(format("[%s]:agent starting with configuration:%s", agentName, JSON.stringify(config)));
+  _startAgent(self, agentName, buildFunction(config, self.logger));
+}
+
+/*******************************************************************************
+ *  Handle the incoming messages from the agents
+ *******************************************************************************/
 // Handles incoming data
 var _agentDataHandler = function _agentDataHandler(name, agent, self) {
   var logger = self.logger;
@@ -191,27 +215,6 @@ var _agentErrorHandler = function _agentErrorHandler(name, agent, self) {
   }
 }
 
-// Seup top agent
-var _configureTopAgent = function _configureTopAgent(self, config) {
-  if(self.logger) self.logger.info(format("[%s]:agent starting with configuration:%s", 'top', JSON.stringify(config)));
-  // Start agent
-  _startAgent(self, 'top', top_agent.build(config, self.logger));
-}
-
-// Setup iostat agent
-var _configureIoStatAgent = function _configureIoStatAgent(self, config) {
-  if(self.logger) self.logger.info(format("[%s]:agent starting with configuration:%s", 'iostat', JSON.stringify(config)));
-  // Start agent
-  _startAgent(self, 'iostat', iostat_agent.build(config, self.logger));
-}
-
-// Setup netstat agent
-var _configureNetStatAgent = function _configureNetStatAgent(self, config) {
-  if(self.logger) self.logger.info(format("[%s]:agent starting with configuration:%s", 'netstat', JSON.stringify(config)));
-  // Start agent
-  _startAgent(self, 'netstat', netstat_agent.build(config, self.logger));
-}
-
 var _startAgent = function(self, name, agent) {
   // Add listeners
   agent.on("data", _agentDataHandler(name, agent, self));
@@ -226,11 +229,6 @@ var _startAgent = function(self, name, agent) {
   } catch(err) {
     if(self.logger) self.logger.error(format("[%s]:agent received error:%s", name, err.toString()));
   }
-}
-
-// Setup mongodb agent
-var _configureMongoDBAgent = function _configureMongoDBAgent(self, config) {
-  if(self.logger) self.logger.info(format("[%s]:agent starting with configuration:%s", 'mongodb', JSON.stringify(config)));
 }
 
 /*******************************************************************************

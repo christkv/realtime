@@ -27,7 +27,7 @@ var _buildAgent = function _buildAgent(platform, config, logger) {
  *  OSX IO Stat agent
  *******************************************************************************/
 var ProcessesAgent = function ProcessesAgent(config, logger) {
-  BaseAgent.call(this, 'cpu_timers');
+  BaseAgent.call(this, 'processes');
 
   this.config = config;
   this.logger = logger;
@@ -45,26 +45,24 @@ ProcessesAgent.prototype.start = function start() {
   this.running = true;
 
   var executeFunction = function() {
-    if(self.running) {
-      self.psutil.process_list(function(err, processes) {
-        if(err) {
-          self.emitObject("error", err);
-        } else {
-
-          // Decorate the processes
-          decorate_processes(processes, function(err, finalProcesses) {
+    self.psutil.process_list(function(err, processes) {
+      if(err) {
+        self.emitObject("error", err);
+        if(self.running) setTimeout(executeFunction, self.interval);
+      } else {
+        // Decorate the processes
+        decorate_processes(processes, function(err, finalProcesses) {
+          if(err) {
+            self.emitObject("error", err);
+          } else {
             self.emitObject("data", finalProcesses);
-          });
-        }
-
-        if(self.running) setTimeout(executeFunction, this.interval);
-      });
-    } else {
-      if(self.running) setTimeout(executeFunction, this.interval);
-    }
+          }
+        });
+      }
+    });
   }
 
-  setTimeout(executeFunction, this.interval);
+  setTimeout(executeFunction, self.interval);
 }
 
 ProcessesAgent.prototype.stop = function stop() {

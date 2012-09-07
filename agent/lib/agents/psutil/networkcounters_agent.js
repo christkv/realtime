@@ -53,14 +53,14 @@ NetworkCountersAgent.prototype.start = function start() {
           self.emitObject("data", counters);
         }
 
-        if(self.running) setTimeout(executeFunction, this.interval);
+        if(self.running) setTimeout(executeFunction, self.interval);
       });
     } else {
-      if(self.running) setTimeout(executeFunction, this.interval);
+      if(self.running) setTimeout(executeFunction, self.interval);
     }
   }
 
-  setTimeout(executeFunction, this.interval);
+  setTimeout(executeFunction, self.interval);
 }
 
 NetworkCountersAgent.prototype.stop = function stop() {
