@@ -16,7 +16,7 @@ var _buildAgent = function _buildAgent(platform, config, logger) {
   }
 
   if("darwin" == platform || "linux" == platform) {
-    return new ProcessesAgent(config, logger);
+    return new DiskUsageAgent(config, logger);
   }
 
   // Throw an unsuported error
@@ -26,7 +26,7 @@ var _buildAgent = function _buildAgent(platform, config, logger) {
 /*******************************************************************************
  *  OSX IO Stat agent
  *******************************************************************************/
-var ProcessesAgent = function ProcessesAgent(config, logger) {
+var DiskUsageAgent = function DiskUsageAgent(config, logger) {
   BaseAgent.call(this, 'cpu_timers');
 
   this.config = config;
@@ -35,25 +35,23 @@ var ProcessesAgent = function ProcessesAgent(config, logger) {
   // Set running to false
   this.running = false;
   // Default sampling interval
-  this.interval = config.interval ? config.interval : 1000;
+  this.interval = config.interval ? Math.round(config.interval / 1000) : 1;
 }
 
-util.inherits(ProcessesAgent, BaseAgent);
+util.inherits(DiskUsageAgent, BaseAgent);
 
-ProcessesAgent.prototype.start = function start() {
+DiskUsageAgent.prototype.start = function start() {
   var self = this;
   this.running = true;
 
   var executeFunction = function() {
     if(self.running) {
-      self.psutil.process_list(function(err, processes) {
+      self.psutil.disk_partitions(false, function(err, partitions) {
         if(err) {
           self.emitObject("error", err);
         } else {
-
-          // Decorate the processes
-          decorate_processes(processes, function(err, finalProcesses) {
-            self.emitObject("data", finalProcesses);
+          decorate_partitions(self.psutil, partitions, function(err, finalPartitions) {
+            self.emitObject("data", finalPartitions);
           });
         }
 
@@ -64,72 +62,35 @@ ProcessesAgent.prototype.start = function start() {
     }
   }
 
-  setTimeout(executeFunction, this.interval);
+  process.nextTick(executeFunction);
 }
 
-ProcessesAgent.prototype.stop = function stop() {
+DiskUsageAgent.prototype.stop = function stop() {
   this.running = false;
   this.emitObject("end", 0);
 }
 
-var decorate_processes = function decorate_processes(processes, callback) {
-  var total = processes.length;
-  var execute = function(_process) {
+var decorate_partitions = function decorate_partitions(psUtil, partitions, callback) {
+  var total = partitions.length;
+  var execute = function(_partition) {
     return function() {
-      var parallel_counter = 0;
-      var parallel_goal = 4;
-
-      var returnFunction = function() {
-        if(parallel_counter >= parallel_goal) {
-          total = total - 1;
-
-          if(total == 0) {
-            callback(null, processes);
-          }
+      psUtil.disk_usage(_partition.mountpoint, function(err, result) {
+        _partition.usage = result;
+        total = total - 1;
+        if(total == 0) {
+          callback(null, partitions);
         }
-      }
-
-      _process.name(function() {
-        parallel_counter = parallel_counter + 1;
-        returnFunction();
-      });
-
-      _process.exe(function() {
-        parallel_counter = parallel_counter + 1;
-        returnFunction();
-      });
-
-      _process.ppid(function() {
-        parallel_counter = parallel_counter + 1;
-        returnFunction();
-      });
-
-      _process.cpu_times(function() {
-        parallel_counter = parallel_counter + 1;
-        returnFunction();
       });
     }
   }
 
-  // Decorate all the processes
-  for(var i = 0; i < processes.length; i++) {
-    execute(processes[i])();
+  // Decorate all the partitions
+  for(var i = 0; i < partitions.length; i++) {
+    execute(partitions[i])();
   }
 }
 
 exports.build = _buildAgent;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
