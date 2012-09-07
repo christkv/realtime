@@ -30,7 +30,9 @@ var Agent = function Agent(config) {
   this.apiKey = config.api_key || null;
   this.secretKey = config.secret_key || null;
   this.cryptoAlgorithm = config.crypto_algorithm || 'aes256';
-  this.retries = config.retries || 3;
+  this.retries = config.retries || 0;
+  this.currentRetries = this.retries;
+  this.retryInterval = config.interval || 1000;
   this.agentConfigs = Array.isArray(config.agents)
                       ? config.agents
                       : defaultAgents.map(function(value) { return {agent:value}; });
@@ -43,6 +45,34 @@ var Agent = function Agent(config) {
   if(this.log) {
     this.logger = new Logger(fs.createWriteStream(this.log, {flags:"a+", encoding:'ascii', mode: 0666}));
   }
+
+  var self = this;
+  // Error event handlers
+  this.retryHandler = function(err) {
+    console.dir(err)
+    // If we have unlimited retires or retry count larger than 0
+    if(self.retries == 0 || self.currentRetries > 0) {
+      // Adjust retry count
+      if(self.currentRetries > 0) self.currentRetries--;
+      if(this.logger) this.logger.error("agent retrying to connect to server");
+      // Wait for the set interval and try again
+      setTimeout(function() {
+        self.start();
+      }, self.retryInterval);
+    } else {
+      if(this.logger) this.logger.error("agent failed to connect to server");
+      process.exit();
+    }
+  };
+
+  // Add event handlers
+  this.on("connect", function() {
+    if(this.logger) this.logger.error("agent connected to server");
+    self.currentRetries = self.retries;
+    self.running = true;
+  });
+
+  this.on("connectFailed", this.retryHandler);
 }
 
 inherits(Agent, EventEmitter);
@@ -57,6 +87,7 @@ Agent.prototype.start = function start() {
 }
 
 Agent.prototype.shutdown = function shutdown() {
+  var self = this;
   if(this.logger) this.logger.error("agent shutting down");
   // Set state to not runnint
   this.running = false;
@@ -69,6 +100,7 @@ Agent.prototype.shutdown = function shutdown() {
 var _connectionErrorHandler = function _connectionErrorHandler(event, self) {
   return function(err) {
     if(self.logger && err != true) self.logger.error(format("agent received error:%s", err.toString()));
+    if(self.listeners(event).length > 0) self.emit(event, err);
     if(err != null) self.shutdown();
   }
 }
@@ -86,7 +118,10 @@ var _connectToServer = function _connectToServer(self, callback) {
     self.connection = connection;
     self.connection.on('error', _connectionErrorHandler('error', self));
     self.connection.on('close', _connectionErrorHandler('error', self));
+    self.connection.on('close', self.retryHandler);
     self.connection.on('message', _connectionDataHandler('message', self));
+    // Emit a connect message
+    self.emit("connect");
 
     // Callback to start
     callback(null, null);

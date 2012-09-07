@@ -22,12 +22,17 @@ var argv = require('optimist')
   .default('c', 'aes256')
   // Retries
   .alias('r', 'retries')
-  .describe('r', 'number of agent retries, default: 3')
-  .default('r', 3)
+  .describe('r', 'number of agent retries (0 meaning unlimited), default: 0')
+  .default('r', 0)
+  // Retries
+  .alias('i', 'interval')
+  .describe('i', 'interval in miliseconds between retries, default: 1000')
+  .default('r', 0)
   // Agents
   .alias('a', 'agents')
-  .describe('a', 'list of agents to try, default: "top,iostat, netstat"')
-  .default('a', ["top", "iostat", "netstat"])
+  .describe('a', 'list of agents to try, default: "cpu_percents, disk_usage, cpu_times, io_counters, memory_status, network_counters, processes"')
+  .default('a', ['cpu_percents', 'disk_usage', 'cpu_times', 'io_counters',
+    'memory_status', 'network_counters', 'processes'])
   // Host
   .alias('w', 'host')
   .describe('w', 'reporter host, default: localhost')
