@@ -38,3 +38,17 @@ rect.background {
   stroke: white;
   fill: steelblue;
 }
+
+#cpu_timers {
+  width: 100px;
+  float:left;
+}
+
+label {
+font: 10px sans-serif;
+  background-color: steelblue;
+  text-align: right;
+  padding: 3px;
+  margin: 1px;
+  color: white;
+}
