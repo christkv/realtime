@@ -20,7 +20,11 @@
     "psutil": "latest"
   },
   "devDependencies": {
-    "nodeunit": "latest"
+    "nodeunit": "latest",
+    "less": "latest",
+    "jshint": "latest",
+    "recess": "latest",
+    "uglify-js": "latest"
   },
   "keywords": [
     "realtime",

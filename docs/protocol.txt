@@ -1,0 +1,23 @@
+On connect
+---------------------------------
+1. __Client__ sends request to server for list of "subscribed servers"
+2. __Server__ send json with list of subscribed servers
+
+  {
+    subscribed: [
+    {
+      ip: "192.168.0.1",
+      host: "localhost",
+      os: "darwin",
+      arch: "x86",
+    }],
+    unsubscribed: [
+    {
+      ip: "192.168.0.1",
+      host: "localhost",
+      os: "darwin",
+      arch: "x86",
+    }]
+  }
+
+New servers
