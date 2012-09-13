@@ -47,3 +47,27 @@ rect.background {
 .statsClass {
   font: 10px sans-serif;
 }
+
+.realtime-unit {
+  padding: 5px;
+  margin-bottom: 10px;
+  background-color: #eeeeee;
+  -webkit-border-radius: 6px;
+     -moz-border-radius: 6px;
+          border-radius: 6px;
+}
+
+.realtime-unit h1 {
+  margin-bottom: 0;
+  font-size: 60px;
+  line-height: 1;
+  letter-spacing: -1px;
+  color: inherit;
+}
+
+.realtime-unit p {
+  font-size: 18px;
+  font-weight: 200;
+  line-height: 30px;
+  color: inherit;
+}

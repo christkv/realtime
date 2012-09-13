@@ -1,9 +1,23 @@
 On connect
 ---------------------------------
-1. __Client__ sends request to server for list of "subscribed servers"
-2. __Server__ send json with list of subscribed servers
+1. __Server__ sends session id with authorization information
 
   {
+    type: 'authorized',
+    session_id: '32123231232131231212312123121'
+  }
+
+2. __Client__ sends request to server for list of "subscribed servers"
+
+  {
+    type: 'list'
+    session_id: '32123231232131231212312123121'
+  }
+
+3. __Server__ send json with list of subscribed servers
+
+  {
+    type: 'servers',
     subscribed: [
     {
       ip: "192.168.0.1",
@@ -11,6 +25,7 @@ On connect
       os: "darwin",
       arch: "x86",
     }],
+
     unsubscribed: [
     {
       ip: "192.168.0.1",
@@ -20,4 +35,55 @@ On connect
     }]
   }
 
-New servers
+Stop/Start message flood
+---------------------------------
+1. __Client__ send json to start/stop message flood
+
+  {
+    type: 'messages_pause'
+    session_id: '32123231232131231212312123121'
+  }
+
+  {
+    type: 'messages_resume'
+    session_id: '32123231232131231212312123121'
+  }
+
+New servers are annunced by message from the server
+---------------------------------
+1. __Server__ sends json to the clients
+
+  {
+    type: 'new_server',
+    session_id: '32123231232131231212312123121'
+    servers: [
+    {
+      _id: "23432ab3333333333"
+      ip: "192.168.0.1",
+      host: "localhost",
+      os: "darwin",
+      arch: "x86",
+    }]
+  }
+
+Subscribe/Unsubscribe to new server
+---------------------------------
+1. __Client__ sends json to server
+
+  {
+    type: 'subscribe/unsubscribe',
+    session_id: '32123231232131231212312123121'
+    servers: [
+      {_id: "23432ab3333333333"}
+    ]
+  }
+
+2. __Server acknowledges json to server
+
+  {
+    type: 'subscribe_ack/unsubscribe_ack'
+    session_id: '32123231232131231212312123121'
+    servers: [
+      {_id: "23432ab3333333333"}
+    ]
+  }

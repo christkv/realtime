@@ -17,7 +17,9 @@
     "mongodb": "latest",
     "ejs": "latest",
     "async": "latest",
-    "psutil": "latest"
+    "psutil": "latest",
+    "connect": "latest",
+    "nopt": "latest"
   },
   "devDependencies": {
     "nodeunit": "latest",
