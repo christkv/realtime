@@ -72,41 +72,6 @@ ProcessesAgent.prototype.stop = function stop() {
 }
 
 var decorate_processes = function decorate_processes(processes, callback) {
-  // processes[0].name(function() {
-  //   console.log("+++++++++++++++++++++++++++++++++++++++++++++++ decorate_processes")
-  //   console.dir(processes[0])
-  //   callback(null, processes);
-  // })
-
-  // processes = processes.slice(0, 10);
-
-  // //
-  // var decorateProcess = function(_process) {
-  //   return function(callback) {
-  //     console.log("_________________________ decoreate :: " + _process._pid)
-  //     _process.name(function() {
-  //       callback(null, null);
-  //     })
-  //   }
-  // }
-
-  // // Total number of processes
-  // var totalNumberOfProcesses = processes.length;
-  // // Go over all the processes and decorate it
-  // for(var i = 0; i < 10; i++) {
-  //   decorateProcess(processes[i])(function() {
-  //     totalNumberOfProcesses = totalNumberOfProcesses - 1;
-
-  //     if(totalNumberOfProcesses == 0) {
-  //       console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-  //       console.dir(processes)
-  //       callback(null, processes);
-  //     }
-  //   })
-  // }
-
-
-  // console.log("+++++++++++++++++++++++++++++++++++++++++++++++ decorate_processes")
   var total = processes.length;
   var execute = function(_process) {
     return function() {
@@ -118,15 +83,12 @@ var decorate_processes = function decorate_processes(processes, callback) {
           total = total - 1;
 
           if(total == 0) {
-            // console.log("===================================================")
-            // console.dir(processes)
             callback(null, processes);
           }
         }
       }
 
       _process.name(function() {
-        // console.log("======================= process pid :: " + _process._pid + " - " + _process._name)
         parallel_counter = parallel_counter + 1;
         returnFunction();
       });
