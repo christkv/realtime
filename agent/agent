@@ -25,9 +25,13 @@ var argv = require('optimist')
   .describe('r', 'number of agent retries (0 meaning unlimited), default: 0')
   .default('r', 0)
   // Retries
+  .alias('e', 'retryInterval')
+  .describe('e', 'interval in miliseconds between retries, default: 1000')
+  .default('e', 1000)
+  // Retries
   .alias('i', 'interval')
-  .describe('i', 'interval in miliseconds between retries, default: 1000')
-  .default('r', 0)
+  .describe('i', 'interval between each poll, default: 1000')
+  .default('i', 1000)
   // Agents
   .alias('a', 'agents')
   .describe('a', 'list of agents to try, default: "cpu_percents, disk_usage, cpu_times, io_counters, memory_status, network_counters, processes"')
@@ -95,6 +99,8 @@ if(typeof argv.cfg == 'string') {
     , port: argv.port
     , api_key: argv.api_key
     , secret_key: argv.secret_key
+    , interval: argv.interval
+    , retryInterval: argv.retryInterval
     , retries: argv.retries
     , crypto_algorithm: argv.crypto_algorithm
     , agents: argv.agents

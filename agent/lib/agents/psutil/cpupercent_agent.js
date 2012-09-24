@@ -28,14 +28,13 @@ var _buildAgent = function _buildAgent(platform, config, logger) {
  *******************************************************************************/
 var CPUPercentAgent = function CPUPercentAgent(config, logger) {
   BaseAgent.call(this, 'cpu_percents');
-
   this.config = config;
   this.logger = logger;
   this.psutil = new PSUtil();
   // Set running to false
   this.running = false;
   // Default sampling interval
-  this.interval = config.interval ? Math.round(config.interval / 1000) : 1;
+  this.interval = config.interval ? config.interval : 1000;
 }
 
 util.inherits(CPUPercentAgent, BaseAgent);

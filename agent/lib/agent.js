@@ -23,6 +23,7 @@ var Agent = function Agent(config) {
   // Default agents
   var defaultAgents = ['cpu_percents', 'disk_usage', 'cpu_times', 'io_counters',
     'memory_status', 'network_counters', 'processes'];
+  var self = this;
   // Unpack the config
   this.host = config.host || "localhost";
   this.port = config.port || 9090;
@@ -32,10 +33,17 @@ var Agent = function Agent(config) {
   this.cryptoAlgorithm = config.crypto_algorithm || 'aes256';
   this.retries = config.retries || 0;
   this.currentRetries = this.retries;
-  this.retryInterval = config.interval || 1000;
+  this.retryInterval = config.retryInterval || 1000;
+  this.interval = config.interval || 1000;
   this.agentConfigs = Array.isArray(config.agents)
-                      ? config.agents
-                      : defaultAgents.map(function(value) { return {agent:value}; });
+                      ? config.agents.map(function(value) {
+                        value.interval = self.interval;
+                        return value;
+                      })
+                      : defaultAgents.map(function(value) { return {
+                        agent: value,
+                        interval: self.interval                        
+                      }; });
   // If no apiKey provided throw an error
   if(this.apiKey == null) throw new Error("api key must be provided");
   // All agent instances
@@ -49,7 +57,6 @@ var Agent = function Agent(config) {
   var self = this;
   // Error event handlers
   this.retryHandler = function(err) {
-    console.dir(err)
     // If we have unlimited retires or retry count larger than 0
     if(self.retries == 0 || self.currentRetries > 0) {
       // Adjust retry count
@@ -179,7 +186,6 @@ var _configureAgentAndStart = function _configureAgentAndStart(self, agentName, 
 /*******************************************************************************
  *  Handle the incoming messages from the agents
  *******************************************************************************/
-// Handles incoming data
 var _agentDataHandler = function _agentDataHandler(name, agent, self) {
   var logger = self.logger;
   return function(data) {
