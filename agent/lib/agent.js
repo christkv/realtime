@@ -7,6 +7,7 @@ var nopt = require("nopt")
   , Stream = require("stream").Stream
   , inherits = require('util').inherits
   , crypto = require('crypto')
+  , dgram = require('dgram')
   , path = require("path");
 
 // Agents
@@ -27,7 +28,9 @@ var Agent = function Agent(config) {
   // Unpack the config
   this.host = config.host || "localhost";
   this.port = config.port || 9090;
+  this.udp_port = config.udp_port || 9080;
   this.log = config.log;
+  this.transport = config.socket_transport || "tcp";
   this.apiKey = config.api_key || null;
   this.secretKey = config.secret_key || null;
   this.cryptoAlgorithm = config.crypto_algorithm || 'aes256';
@@ -86,11 +89,38 @@ inherits(Agent, EventEmitter);
 
 Agent.prototype.start = function start() {
   var self = this;
-  // Setup the server connection for reporting the numbers
-  _connectToServer(self, function() {
-    // Unpack the parameters and instantiate the components
-    _setUpAgents(self);
-  });
+
+  if(self.transport == "tcp") {
+    // Setup the server connection for reporting the numbers
+    _connectToServer(self, function() {
+      // Unpack the parameters and instantiate the components
+      _setUpAgents(self);
+    });    
+  } else if(self.transport == "udp") {
+    // Attempt a udp connection first
+    _connectUDPServer(self, function() {
+      // Unpack the parameters and instantiate the components
+      _setUpAgents(self);
+    });
+  } else {
+    throw new Error("transport " + self.transport + " not supported");
+  }
+}
+
+var _connectUDPServer = function _connectUDPServer(self, callback) {
+  // Create a udpSocket
+  self.udpSocket = dgram.createSocket("udp4");
+  // Just get the address
+  self.udpSocket.on("listening", function() {
+    self.udpAddress = self.udpSocket.address();
+    self.udpSocket.close();
+    // Rebind with no listener
+    self.udpSocket = dgram.createSocket("udp4");
+  })
+  // this.udpAddress = this.udpSocket.address();
+  self.udpSocket.bind(89999, "localhost");
+  // Callback
+  callback(null, null);
 }
 
 Agent.prototype.shutdown = function shutdown() {
@@ -129,7 +159,6 @@ var _connectToServer = function _connectToServer(self, callback) {
     self.connection.on('message', _connectionDataHandler('message', self));
     // Emit a connect message
     self.emit("connect");
-
     // Callback to start
     callback(null, null);
   });
@@ -191,34 +220,44 @@ var _agentDataHandler = function _agentDataHandler(name, agent, self) {
   return function(data) {
     if(logger) logger.info(format("[%s]:agent received data", name));
     if(logger) logger.debug(JSON.stringify(data));
+    // Set the final object
+    var finalObject = data;
+    // Add the information about the originating address of the data
+    if(!data.info) data.info = {};
+    // Add socket connection if any
+    if(self.connection) {
+      data.info.net = self.connection.socket.address();      
+    } else if(self.transport == "udp") {
+      data.info.net = self.udpAddress;
+    }
+
+    // Add the timestamp since 1970 in miliseconds
+    data.at = new Date().getTime();
+    // If we have an apikey and secretKey we are going to encrypt the content
+    if(self.apiKey != null && self.secretKey) {
+      // Encryp the data as base 64 string
+      var cipher = crypto.createCipher(self.cryptoAlgorithm, self.secretKey);
+      // Encrypt the data
+      var encryptedData = cipher.update(JSON.stringify(data), 'utf8', 'base64');
+      encryptedData = encryptedData + cipher.final('base64');
+      // Set the encrypted info
+      finalObject = {
+        api_key: self.apiKey,
+        encrypted: true,
+        data: encryptedData
+      }
+    } else {
+      data.api_key = self.apiKey;
+    }
+
     // If we are connected, fire off the message
     if(self.running && self.connection) {
-      // Set the final object
-      var finalObject = data;
-      // Add the information about the originating address of the data
-      if(!data.info) data.info = {};
-      data.info.net = self.connection.socket.address();
-      // Add the timestamp since 1970 in miliseconds
-      data.at = new Date().getTime();
-      // If we have an apikey and secretKey we are going to encrypt the content
-      if(self.apiKey != null && self.secretKey) {
-        // Encryp the data as base 64 string
-        var cipher = crypto.createCipher(self.cryptoAlgorithm, self.secretKey);
-        // Encrypt the data
-        var encryptedData = cipher.update(JSON.stringify(data), 'utf8', 'base64');
-        encryptedData = encryptedData + cipher.final('base64');
-        // Set the encrypted info
-        finalObject = {
-          api_key: self.apiKey,
-          encrypted: true,
-          data: encryptedData
-        }
-      } else {
-        data.api_key = self.apiKey;
-      }
-
       // Send the message to the server
-      self.connection.sendUTF(JSON.stringify(finalObject));
+      self.connection.sendUTF(JSON.stringify(finalObject));        
+    } else if(self.running && self.transport == "udp") {
+      var json = JSON.stringify(finalObject);
+      var buffer = new Buffer(json);
+      self.udpSocket.send(buffer, 0, buffer.length, self.udp_port, self.host);
     }
   }
 }

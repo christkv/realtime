@@ -37,6 +37,10 @@ var argv = require('optimist')
   .describe('a', 'list of agents to try, default: "cpu_percents, disk_usage, cpu_times, io_counters, memory_status, network_counters, processes"')
   .default('a', ['cpu_percents', 'disk_usage', 'cpu_times', 'io_counters',
     'memory_status', 'network_counters', 'processes'])
+  // Transport
+  .alias('t', 'socket_transport')
+  .describe('t', 'specify the socket transport, "udp" or "tcp", default: "tcp"')
+  .default('t', "tcp")
   // Host
   .alias('w', 'host')
   .describe('w', 'reporter host, default: localhost')
@@ -47,6 +51,11 @@ var argv = require('optimist')
   .describe('p', 'reporter port, default: 9090')
   // Set up defaults
   .default('p', 9090)
+  // UDP Port
+  .alias('u', 'udp_port')
+  .describe('u', 'reporter udp port, default: 9080')
+  // Set up defaults
+  .default('u', 9080)
   // Configuraiton
   .alias('f', 'cfg')
   .describe('f', 'configuration file location, default none')
@@ -97,6 +106,8 @@ if(typeof argv.cfg == 'string') {
   var config = {
       host: argv.host
     , port: argv.port
+    , udp_port: argv.udp_port
+    , socket_transport: argv.socket_transport
     , api_key: argv.api_key
     , secret_key: argv.secret_key
     , interval: argv.interval
